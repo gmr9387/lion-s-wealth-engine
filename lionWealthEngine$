@@ -1,0 +1,490 @@
+// FILE: lionsWealthEngine.ts
+// Single-file wealth engine. Paste into your repo as `lionsWealthEngine.ts`.
+// Run with: ts-node lionsWealthEngine.ts (or import runWealthEngine into your code)
+
+type UUID = string;
+type ISODate = string;
+
+/* ---------- Types ---------- */
+type IncomeSource = { id: UUID; name: string; monthlyAmount: number; startMonthIndex?: number; recurring?: boolean };
+type ExpenseItem = IncomeSource & { category?: string };
+type Asset = { id: UUID; name: string; currentValue: number; monthlyCashflow: number; annualGrowthRate: number };
+type Liability = { id: UUID; name: string; outstanding: number; monthlyPayment: number; annualInterestRate: number };
+type CreditDerogatory = { id: UUID; type: "late"|"collection"|"charge_off"|"judgment"|"public_record"; balance:number; monthsOutstanding:number; severity:number };
+type Tradeline = { institution: string; limit: number; ageMonths: number };
+type CreditProfile = { score:number; revolvingUtilization:number; derogatories: CreditDerogatory[]; tradelines: Tradeline[] };
+type BusinessEntity = { id: UUID; name: string; establishedMonthsAgo:number; tradeLines:number; hasEIN:boolean; businessCreditScore:number };
+
+type DigitalIncomeConfig = { launchMonths:number; initialMonthly:number; growthRateMonthly:number; churnRateMonthly?:number; variability?:number; investPercent?:number };
+
+type SimulationInput = {
+  months?: number;
+  startDate?: ISODate;
+  startingCash?: number;
+  startingNetWorth?: number;
+  incomes?: IncomeSource[];
+  expenses?: ExpenseItem[];
+  assets?: Asset[];
+  liabilities?: Liability[];
+  creditProfile?: CreditProfile;
+  business?: BusinessEntity | null;
+  digitalIncomes?: Partial<Record<string, DigitalIncomeConfig>>;
+  priorities?: { cashBufferMonths?: number; debtPaydownPriority?: "snowball"|"avalanche"; investPercentOfSurplus?: number; bizReinvestPercent?: number };
+};
+
+type MonthSnapshot = {
+  monthIndex:number;
+  date: ISODate;
+  income:number;
+  digitalIncome:number;
+  passiveIncome:number;
+  expenses:number;
+  liabilityPayments:number;
+  surplus:number;
+  cash:number;
+  assetsTotal:number;
+  liabilitiesTotal:number;
+  netWorth:number;
+  creditScore:number;
+  passiveIncomeStream:number;
+  events:string[];
+};
+
+type SimulationResult = {
+  timeline: MonthSnapshot[];
+  recommendations: { score:number; message:string; code?:string }[];
+  millionaireMonthIndex: number|null;
+  monthsUntilBorrowAmount: Record<string, number|null>;
+  events: { type:string; payload:any; monthIndex:number }[];
+};
+
+/* ---------- Utilities ---------- */
+function uuid(): UUID {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    const r = (Math.random()*16)|0; const v = c==="x"?r:(r&0x3)|0x8; return v.toString(16);
+  });
+}
+function addMonthsISO(startIso: ISODate, months:number): ISODate {
+  const d = new Date(startIso); d.setMonth(d.getMonth()+months); return d.toISOString().slice(0,10);
+}
+function monthlyMortgagePayment(loanAmount:number, annualRate:number, years=30){
+  const r=annualRate/12; const n=years*12; if(r===0) return loanAmount/n; return (loanAmount*r)/(1-Math.pow(1+r,-n));
+}
+function clamp(n:number,a:number,b:number){ return Math.max(a,Math.min(b,n)); }
+function round2(n:number){ return Math.round(n*100)/100; }
+
+/* ---------- Credit Engine (Metro-2 inspired, approximate) ---------- */
+
+function baselineScoreFromProfile(profile: CreditProfile){
+  const base = 300 + (profile.tradelines.length*20);
+  const utilFactor = clamp(1 - profile.revolvingUtilization, 0, 1);
+  const derogPenalty = profile.derogatories.reduce((s,d)=>s+d.severity*4 + d.monthsOutstanding*0.2,0);
+  const tradelineBoost = profile.tradelines.reduce((s,t)=>s+Math.min(50, t.ageMonths/2 + t.limit/1000),0);
+  let score = Math.round(base*0.6 + 250*utilFactor + tradelineBoost - derogPenalty);
+  return clamp(score,300,850);
+}
+
+function planCreditRepair(profile: CreditProfile){
+  const actions:any[]=[];
+  if(profile.revolvingUtilization>0.3) actions.push({code:"reduce_util",desc:"Pay down revolvings to <30%",months:3,scoreGain:20});
+  if(profile.tradelines.length<2) actions.push({code:"add_tradeline",desc:"Add secured tradeline/AU",months:6,scoreGain:30});
+  if(profile.derogatories.length>0){
+    const most = profile.derogatories.sort((a,b)=>b.severity-a.severity)[0];
+    actions.push({code:"dispute_settle",desc:`Dispute/settle ${most.type}`,months:2+Math.min(12,Math.floor(most.monthsOutstanding/6)),scoreGain:40});
+  }
+  actions.push({code:"pay_on_time",desc:"Automate on-time payments",months:24,scoreGain:80});
+  return {actions};
+}
+
+function simulateCreditTimeline(profileIn: CreditProfile, months:number, aggressive=true){
+  const profile: CreditProfile = JSON.parse(JSON.stringify(profileIn));
+  const scoreTimeline:number[]=[];
+  let util = profile.revolvingUtilization;
+  let derog = profile.derogatories.map(d=>({...d}));
+  const actions = planCreditRepair(profile);
+  for(let m=0;m<months;m++){
+    if(aggressive){
+      const utilA = actions.find(a=>a.code==="reduce_util");
+      if(utilA && m<utilA.months){ util = util - (profile.revolvingUtilization-0.25)/utilA.months; util = clamp(util,0.05,1); }
+      const tradA = actions.find(a=>a.code==="add_tradeline");
+      if(tradA && m===Math.floor(tradA.months/2)) profile.tradelines.push({institution:"secured-bank",limit:500,ageMonths:0});
+      const disp = actions.find(a=>a.code==="dispute_settle");
+      if(disp){
+        derog = derog.map(d=>{
+          if(Math.random()<0.08) return null as any;
+          if(Math.random()<0.10){ d.balance = Math.max(0,d.balance*0.6); }
+          d.monthsOutstanding +=1;
+          return d;
+        }).filter(Boolean);
+      }
+    }
+    profile.tradelines.forEach(t=>t.ageMonths +=1);
+    const temp: CreditProfile = {...profile, revolvingUtilization:util, derogatories: derog as CreditDerogatory[]};
+    let s = baselineScoreFromProfile(temp);
+    const prog = Math.min(1,m/24);
+    s = Math.round(s + prog*50*(aggressive?1:0.3));
+    s = clamp(s + Math.round((Math.random()-0.5)*6),300,850);
+    scoreTimeline.push(s);
+  }
+  return {scoreTimeline, finalProfile: profile};
+}
+
+/* ---------- Digital Income Modules ---------- */
+
+function simulateGrowthRevenue(cfg: DigitalIncomeConfig, months:number){
+  const out = new Array(months).fill(0);
+  for(let m=0;m<months;m++){
+    if(m < cfg.launchMonths){ out[m]=0; continue; }
+    const t = m - cfg.launchMonths;
+    const churn = cfg.churnRateMonthly ?? 0.02;
+    const growth = Math.pow(1 + cfg.growthRateMonthly, t);
+    const retention = Math.pow(1 - churn, Math.max(0,t-1));
+    const variability = 1 + (Math.random()-0.5) * (cfg.variability ?? 0.15);
+    out[m] = Math.max(0, cfg.initialMonthly * growth * retention * variability);
+  }
+  return out;
+}
+
+function buildDigitalIncomeStreams(configs: Partial<Record<string,DigitalIncomeConfig>> = {}, months:number){
+  const streams: Record<string, number[]> = {};
+  const keys = Object.keys(configs);
+  for(const k of keys) streams[k] = simulateGrowthRevenue(configs[k]!, months);
+  const totals = new Array(months).fill(0);
+  for(let m=0;m<months;m++) for(const k of keys) totals[m] += streams[k][m] || 0;
+  return {streams, totals};
+}
+
+/* ---------- Projection Engine ---------- */
+
+function estimateMonthsToBorrowFromTimeline(timeline: MonthSnapshot[], creditTimeline:number[], desiredAmount:number, annualRate=0.07){
+  const monthlyPayment = monthlyMortgagePayment(desiredAmount, annualRate, 30);
+  for(let i=0;i<timeline.length;i++){
+    const snap = timeline[i];
+    const netWorth = snap.netWorth;
+    const surplus = snap.surplus;
+    const credit = creditTimeline[i] ?? snap.creditScore;
+    if(netWorth >= desiredAmount*0.10 && surplus >= monthlyPayment*1.1 && credit >= 650) return i;
+    if(snap.passiveIncomeStream >= monthlyPayment*0.9 && credit >=700 && netWorth >= desiredAmount*0.05) return i;
+  }
+  return null;
+}
+
+function generateRecommendationsFromTimeline(timeline: MonthSnapshot[], business: BusinessEntity|null){
+  const recs:{score:number;message:string;code?:string}[] = [];
+  const latest = timeline[timeline.length-1];
+  const monthlyExpenseAvg = Math.max(1, timeline.slice(-12).reduce((s,t)=>s+t.expenses,0)/Math.min(12,timeline.length));
+  if(latest.creditScore < 640) recs.push({score:100,message:"Execute Metro-2 inspired credit repair: dispute/settle derogatories, add tradelines, reduce utilization.",code:"credit_repair"});
+  else if(latest.creditScore < 700) recs.push({score:80,message:"Improve utilization and add tradeline age to reach 700+",code:"credit_boost"});
+  if(latest.cash < monthlyExpenseAvg*3) recs.push({score:90,message:`Build emergency fund of ${Math.ceil(monthlyExpenseAvg*3)}.`,code:"emergency_fund"});
+  if(latest.passiveIncomeStream < monthlyExpenseAvg*0.5) recs.push({score:95,message:"Accelerate passive income channels (digital product, creator funnels, affiliate).",code:"passive_income_build"});
+  else recs.push({score:60,message:"Scale passive channels and systematize monetization.",code:"scale_passive"});
+  const totalLiabilities = timeline[timeline.length-1].liabilitiesTotal;
+  if(totalLiabilities > latest.netWorth*0.25) recs.push({score:85,message:"Prioritize reducing high-interest liabilities (avalanche).",code:"debt_reduction"});
+  if(business){
+    if(!business.hasEIN) recs.push({score:70,message:"Register EIN and formalize entity for business credit.",code:"register_ein"});
+    if(business.tradeLines < 2) recs.push({score:80,message:"Build business tradelines (Net-30 vendors).",code:"biz_tradelines"});
+  } else recs.push({score:50,message:"Consider forming a business entity to access business credit.",code:"consider_entity"});
+  if(latest.netWorth < 1_000_000) recs.push({score:75,message:"Follow rapid-wealth stack: aggressive passive income launches + disciplined reinvestment.",code:"millionaire_path"});
+  else recs.push({score:40,message:"Preserve, tax-optimize, and strategically leverage." , code:"preserve_million"});
+  recs.sort((a,b)=>b.score-a.score);
+  return recs;
+}
+
+/* runProjection: orchestrates the full simulation */
+export function runWealthEngine(input: SimulationInput): SimulationResult {
+  const months = input.months ?? 240;
+  const startDate = input.startDate ?? new Date().toISOString().slice(0,10);
+  const cashBufferMonths = input.priorities?.cashBufferMonths ?? 3;
+  const investPercent = input.priorities?.investPercentOfSurplus ?? 0.4;
+  const bizReinvest = input.priorities?.bizReinvestPercent ?? 0.5;
+  const debtStrategy = input.priorities?.debtPaydownPriority ?? "avalanche";
+
+  const baseIncome = new Array(months).fill(0);
+  const baseExpenses = new Array(months).fill(0);
+  const assets = (input.assets ?? []).map(a=>({...a}));
+  const liabilities = (input.liabilities ?? []).map(l=>({...l}));
+  const credit = input.creditProfile ?? {score:550,revolvingUtilization:0.6,derogatories:[],tradelines:[]};
+  const business = input.business ?? null;
+
+  for(let m=0;m<months;m++){ for(const inc of input.incomes ?? []){ const s=inc.startMonthIndex ?? 0; if(m>=s) baseIncome[m]+=inc.monthlyAmount } for(const e of input.expenses ?? []){ const s=e.startMonthIndex ?? 0; if(m>=s) baseExpenses[m]+=e.monthlyAmount } }
+
+  const {streams: digiStreams, totals: digiTotals} = buildDigitalIncomeStreams(input.digitalIncomes ?? {}, months);
+  const creditSim = simulateCreditTimeline(credit, months, true);
+
+  const timeline: MonthSnapshot[] = [];
+  let cash = input.startingCash ?? 0;
+  let netWorth = input.startingNetWorth ?? (cash + assets.reduce((s,a)=>s+a.currentValue,0) - liabilities.reduce((s,l)=>s+l.outstanding,0));
+  const events:{type:string;payload:any;monthIndex:number}[] = [];
+
+  for(let m=0;m<months;m++){
+    const date = addMonthsISO(startDate,m);
+    const income = baseIncome[m] + (digiTotals[m] || 0);
+    const passiveIncome = assets.reduce((s,a)=>s+a.monthlyCashflow,0);
+    const liabilityPayments = liabilities.reduce((s,l)=>s+l.monthlyPayment,0);
+    const expensesAmt = baseExpenses[m];
+
+    const surplusBefore = income + passiveIncome - expensesAmt - liabilityPayments;
+    const bufferTarget = Math.max(1000, expensesAmt * cashBufferMonths);
+    let allocatedToBuffer=0;
+    if(cash < bufferTarget && surplusBefore > 0){ allocatedToBuffer = Math.min(surplusBefore, bufferTarget - cash); cash += allocatedToBuffer; }
+    let remaining = surplusBefore - allocatedToBuffer; if(remaining < 0) remaining = 0;
+
+    const totalOutstanding = liabilities.reduce((s,l)=>s+l.outstanding,0);
+    let toDebt = 0, toInvest = 0, toBiz=0;
+    if(totalOutstanding > 0){
+      if(debtStrategy==="snowball"){
+        const sorted = [...liabilities].sort((a,b)=>a.outstanding-b.outstanding);
+        const target = sorted[0];
+        toDebt = Math.min(remaining, Math.max(0, target.outstanding - target.monthlyPayment));
+      } else {
+        const sorted = [...liabilities].sort((a,b)=>b.annualInterestRate-a.annualInterestRate);
+        const target = sorted[0];
+        toDebt = Math.min(remaining, Math.max(0, target.outstanding - target.monthlyPayment));
+      }
+    }
+    remaining -= toDebt;
+    toInvest = remaining * investPercent;
+    toBiz = remaining * bizReinvest;
+    remaining -= toInvest + toBiz;
+
+    if(toDebt > 0 && liabilities.length>0){
+      const sorted = [...liabilities].sort((a,b)=>b.annualInterestRate-a.annualInterestRate);
+      const target = sorted[0];
+      const idx = liabilities.findIndex(l=>l.id === target.id);
+      if(idx>=0){ liabilities[idx].outstanding = Math.max(0, liabilities[idx].outstanding - toDebt); liabilities[idx].monthlyPayment = liabilities[idx].outstanding>0?liabilities[idx].monthlyPayment:0; }
+    }
+
+    if(toInvest > 0){
+      if(assets.length===0) assets.push({id:uuid(),name:"portfolio",currentValue:toInvest,monthlyCashflow:0,annualGrowthRate:0.06});
+      else assets[0].currentValue += toInvest;
+    }
+
+    if(business && toBiz > 0){
+      business.tradeLines += Math.floor(toBiz/2000);
+      business.businessCreditScore = clamp(business.businessCreditScore + Math.floor(toBiz/5000), 0, 100);
+    }
+
+    assets.forEach(a=>{ a.currentValue *= 1 + a.annualGrowthRate/12; a.monthlyCashflow *= 1 + (a.annualGrowthRate/12)*0.5; });
+
+    const assetsTotal = assets.reduce((s,a)=>s+a.currentValue,0);
+    const liabilitiesTotal = liabilities.reduce((s,l)=>s+l.outstanding,0);
+    cash += remaining;
+    cash += passiveIncome;
+    netWorth = cash + assetsTotal - liabilitiesTotal;
+    const creditScore = creditSim.scoreTimeline[m] ?? credit.score;
+
+    const monthEvents:string[] = [];
+    if(netWorth >= 1_000_000 && !timeline.some(t=>t.netWorth>=1_000_000)) monthEvents.push("millionaire_reached");
+
+    const snapshot: MonthSnapshot = {
+      monthIndex: m, date, income, digitalIncome: digiTotals[m] || 0, passiveIncome, expenses: expensesAmt, liabilityPayments, surplus: surplusBefore,
+      cash: round2(cash), assetsTotal: round2(assetsTotal), liabilitiesTotal: round2(liabilitiesTotal), netWorth: round2(netWorth), creditScore, passiveIncomeStream: round2(passiveIncome), events: monthEvents
+    };
+    timeline.push(snapshot);
+    for(const ev of monthEvents) events.push({type:ev,payload:{netWorth,month:m,date},monthIndex:m});
+  }
+
+  const millionaireIndex = timeline.findIndex(t=>t.netWorth>=1_000_000);
+  const millionaireMonthIndex = millionaireIndex >=0 ? millionaireIndex : null;
+  const targets = [1_000_000, 1_500_000];
+  const monthsUntilBorrow: Record<string, number|null> = {};
+  const creditTimeline = simulateCreditTimeline(credit, months, true).scoreTimeline;
+
+  for(const amt of targets) monthsUntilBorrow[String(amt)] = estimateMonthsToBorrowFromTimeline(timeline, creditTimeline, amt);
+
+  const recommendations = generateRecommendationsFromTimeline(timeline, business);
+  for(const amt of targets){ const mi = monthsUntilBorrow[String(amt)]; if(mi !== null) events.push({type:"eligible_for_loan", payload:{amount:amt,monthIndex:mi,date: timeline[mi].date}, monthIndex:mi }); }
+
+  return { timeline, recommendations, millionaireMonthIndex, monthsUntilBorrowAmount: monthsUntilBorrow, events };
+}
+
+/* ---------- CLI demo (optional) ---------- */
+if(typeof require !== "undefined" && (require as any).main === module){
+  const sample: SimulationInput = {
+    months: 240,
+    startDate: new Date().toISOString().slice(0,10),
+    startingCash: 0,
+    startingNetWorth: 0,
+    incomes: [{id:uuid(),name:"W2",monthlyAmount:3000}],
+    expenses: [{id:uuid(),name:"living",monthlyAmount:1800}],
+    assets: [{id:uuid(),name:"savings",currentValue:0,monthlyCashflow:0,annualGrowthRate:0.03}],
+    liabilities: [{id:uuid(),name:"student_loan",outstanding:8000,monthlyPayment:100,annualInterestRate:0.05}],
+    creditProfile: {score:540,revolvingUtilization:0.65,derogatories:[{id:uuid(),type:"collection",balance:1200,monthsOutstanding:18,severity:6}],tradelines:[]},
+    business: {id:uuid(),name:"Side LLC",establishedMonthsAgo:0,tradeLines:0,hasEIN:false,businessCreditScore:0},
+    digitalIncomes: {
+      affiliate: {launchMonths:1,initialMonthly:50,growthRateMonthly:0.06},
+      content_creator: {launchMonths:3,initialMonthly:25,growthRateMonthly:0.12},
+      ai_faceless: {launchMonths:2,initialMonthly:100,growthRateMonthly:0.10},
+      dropshipping_pod: {launchMonths:4,initialMonthly:0,growthRateMonthly:0.08},
+      digital_product: {launchMonths:2,initialMonthly:200,growthRateMonthly:0.09},
+      paid_newsletter: {launchMonths:6,initialMonthly:0,growthRateMonthly:0.15}
+    },
+    priorities: { cashBufferMonths:3, debtPaydownPriority:"avalanche", investPercentOfSurplus:0.45, bizReinvestPercent:0.4 }
+  };
+  console.log("Running demo (quick)...");
+  const res = runWealthEngine(sample);
+  const last = res.timeline[res.timeline.length-1];
+  console.log(`Final net worth: $${last.netWorth}, Cash: $${last.cash}, Passive: $${last.passiveIncomeStream}, Credit:${last.creditScore}`);
+  console.log("Millionaire month index:", res.millionaireMonthIndex);
+  console.log("Months until $1M loan:", res.monthsUntilBorrowAmount["1000000"]);
+  console.log("Months until $1.5M mansion:", res.monthsUntilBorrowAmount["1500000"]);
+  console.log("Top recommendations:", res.recommendations.slice(0,5));
+}
+
+/* End of file: lionsWealthEngine.ts */
+
+
+/* ---------------------------------------------------------------------------
+   Below: n8n workflow JSON exports for workflows 19..28.
+   Import these JSONs in n8n: Workflows -> Import from file.
+   Each JSON is kept minimal; set environment variables and credentials in n8n
+   before enabling.
+   --------------------------------------------------------------------------- */
+
+/* FILE: n8n_workflows/19_call_engine_dispatcher.json */
+{
+  "name": "call_engine_dispatcher",
+  "nodes": [
+    {
+      "parameters": { "cronExpression": "0 7 * * *" },
+      "name": "Daily Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200,200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.WEALTH_ENGINE_URL }}",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={ \"input\": { \"months\": 240 } }"
+      },
+      "name": "Call Wealth Engine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [450,200]
+    },
+    {
+      "parameters": {
+        "functionCode": "items[0].json = { timestamp: new Date().toISOString(), payload: items[0].json }; return items;"
+      },
+      "name": "Annotate",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [700,200]
+    }
+  ],
+  "connections": {
+    "Daily Cron": { "main": [[{ "node": "Call Wealth Engine", "type": "main", "index": 0 }]] },
+    "Call Wealth Engine": { "main": [[{ "node": "Annotate", "type": "main", "index": 0 }]] }
+  }
+}
+
+/* FILE: n8n_workflows/20_onboard_new_user.json */
+{
+  "name": "onboard_new_user",
+  "nodes": [
+    { "parameters": { "webhookPath": "onboard-user" }, "name": "Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "functionCode": "const payload = items[0].json; const user = payload; user.id = user.id || String(Math.random()); return [{ json: user }];" }, "name": "Normalize", "type": "n8n-nodes-base.function", "typeVersion": 1, "position": [450,200] },
+    { "parameters": { "resource": "database", "operation": "insert", "table": "profiles", "schema": "public", "columns": "id,name,email,created_at", "values": "= {{$json.id}},{{$json.name}},{{$json.email}},{{ $now }} " }, "name": "Insert Profile", "type": "n8n-nodes-base.postgres", "typeVersion": 1, "position": [700,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method": "POST", "jsonParameters": true, "bodyParametersJson": "={ \"input\": { \"months\": 240, \"startingCash\": 0, \"incomes\": [], \"expenses\": [] } }" }, "name": "Init Projection", "type": "n8n-nodes-base.httpRequest", "typeVersion": 1, "position": [950,200] }
+  ],
+  "connections": { "Webhook": { "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]] }, "Normalize": { "main": [[{ "node": "Insert Profile", "type": "main", "index": 0 }, { "node": "Init Projection", "type": "main", "index": 1 }]] } }
+}
+
+/* FILE: n8n_workflows/21_daily_growth_check.json */
+{
+  "name": "daily_growth_check",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 9 * * *" }, "name": "Daily Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\":{\"months\":120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const res = items[0].json; const events = res.result.events || []; return events.map(e=>({json:e}));" }, "name":"Extract Events","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"events","schema":"public","columns":"type,payload,created_at","values":"={{ $json.type }},={{ JSON.stringify($json.payload) }},{{ $now }}" }, "name":"Save Events","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Daily Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Extract Events", "type": "main", "index": 0 }]] }, "Extract Events": { "main": [[{ "node": "Save Events", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/22_weekly_biz_credit_update.json */
+{
+  "name": "weekly_biz_credit_update",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 10 * * 1" }, "name": "Weekly Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\":120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const recs = items[0].json.result.recommendations || []; return [{ json: { recs } }];" }, "name":"Extract Recs","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"biz_recommendations","schema":"public","columns":"payload,created_at","values":"={{ JSON.stringify($json.recs) }},{{ $now }}" }, "name":"Save Biz Recs","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Weekly Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Extract Recs", "type": "main", "index": 0 }]] }, "Extract Recs": { "main": [[{ "node": "Save Biz Recs", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/23_passive_income_optimizer.json */
+{
+  "name": "passive_income_optimizer",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 12 * * 1" }, "name": "Weekly Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const recs = items[0].json.result.recommendations || []; const actions = recs.filter(r=>r.code && r.code.includes('passive')).map((r,i)=>({json:{task:`Create content or product task #${i+1}`,detail:r.message}})); return actions;" }, "name":"Create Tasks","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"tasks","schema":"public","columns":"title,meta,created_at","values":"={{ $json.task }},={{ JSON.stringify($json.detail) }},{{ $now }}" }, "name":"Save Tasks","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Weekly Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Create Tasks", "type": "main", "index": 0 }]] }, "Create Tasks": { "main": [[{ "node": "Save Tasks", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/24_investment_allocation_engine.json */
+{
+  "name": "investment_allocation_engine",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 3 1 * *" }, "name": "Monthly Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 240}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const top = items[0].json.result.recommendations.slice(0,3); return [{ json: { allocations: top } }];" }, "name":"Create Allocation Plan","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"allocations","schema":"public","columns":"payload,created_at","values":"={{ JSON.stringify($json.allocations) }},{{ $now }}" }, "name":"Save Allocations","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Monthly Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Create Allocation Plan", "type": "main", "index": 0 }]] }, "Create Allocation Plan": { "main": [[{ "node": "Save Allocations", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/25_emergency_fund_manager.json */
+{
+  "name": "emergency_fund_manager",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 6 1 * *" }, "name": "Monthly Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const latest = items[0].json.result.timeline.slice(-1)[0]; if(latest.cash < latest.expenses*3) return [{json:{action:'increase_savings',amt: (latest.expenses*3)-latest.cash}}]; return [];" }, "name":"Decide Action","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"actions","schema":"public","columns":"type,meta,created_at","values":"={{ $json.action }},={{ JSON.stringify($json.amt) }},{{ $now }}" }, "name":"Save Action","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Monthly Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Decide Action", "type": "main", "index": 0 }]] }, "Decide Action": { "main": [[{ "node": "Save Action", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/26_document_package_generator.json */
+{
+  "name": "document_package_generator",
+  "nodes": [
+    { "parameters": { "triggerTimes": [] }, "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const res = items[0].json.result; const snapshot = res.timeline.slice(-1)[0]; const pdfContent = `Net worth: ${snapshot.netWorth}\\nCredit: ${snapshot.creditScore}`; return [{ json: { pdf: pdfContent }}];" }, "name":"Generate PDF content","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "binaryPropertyName": "data", "fileName": "package.txt" }, "name":"Create File","type":"n8n-nodes-base.base64Encode","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Manual Trigger": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Generate PDF content", "type": "main", "index": 0 }]] }, "Generate PDF content": { "main": [[{ "node": "Create File", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/27_kpi_dashboard_updater.json */
+{
+  "name": "kpi_dashboard_updater",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 4 * * *" }, "name": "Daily Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const snapshot = items[0].json.result.timeline.slice(-1)[0]; return [{ json: { kpis: { netWorth: snapshot.netWorth, passive: snapshot.passiveIncomeStream, credit: snapshot.creditScore } } }];" }, "name":"Extract KPIs","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource": "database", "operation": "upsert", "table": "kpis", "schema": "public", "columns": "payload,updated_at", "values": "= {{ JSON.stringify($json.kpis) }},{{ $now }}" }, "name": "Update KPI table", "type": "n8n-nodes-base.postgres", "typeVersion": 1, "position": [950,200] }
+  ],
+  "connections": { "Daily Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Extract KPIs", "type": "main", "index": 0 }]] }, "Extract KPIs": { "main": [[{ "node": "Update KPI table", "type": "main", "index": 0 }]] } }
+}
+
+/* FILE: n8n_workflows/28_user_task_orchestrator.json */
+{
+  "name": "user_task_orchestrator",
+  "nodes": [
+    { "parameters": { "cronExpression": "0 8 * * 1" }, "name": "Weekly Cron", "type": "n8n-nodes-base.cron", "typeVersion": 1, "position": [200,200] },
+    { "parameters": { "url": "={{ $env.WEALTH_ENGINE_URL }}", "method":"POST", "jsonParameters": true, "bodyParametersJson": "={\"input\": {\"months\": 120}}"}, "name":"Call Engine","type":"n8n-nodes-base.httpRequest","typeVersion":1,"position":[450,200]},
+    { "parameters": { "functionCode": "const recs = items[0].json.result.recommendations || []; const tasks = recs.slice(0,5).map((r,i)=>({json:{title:r.message,code:r.code}})); return tasks; " }, "name":"Create Tasks","type":"n8n-nodes-base.function","typeVersion":1,"position":[700,200]},
+    { "parameters": { "resource":"database","operation":"insert","table":"tasks","schema":"public","columns":"title,meta,created_at","values":"={{ $json.title }},={{ JSON.stringify($json.code) }},{{ $now }}" }, "name":"Save Tasks","type":"n8n-nodes-base.postgres","typeVersion":1,"position":[950,200]}
+  ],
+  "connections": { "Weekly Cron": { "main": [[{ "node": "Call Engine", "type": "main", "index": 0 }]] }, "Call Engine": { "main": [[{ "node": "Create Tasks", "type": "main", "index": 0 }]] }, "Create Tasks": { "main": [[{ "node": "Save Tasks", "type": "main", "index": 0 }]] } }
+}
