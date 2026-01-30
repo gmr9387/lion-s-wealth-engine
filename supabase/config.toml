@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.million-mode]
 verify_jwt = false
+
+[functions.parse-credit-report]
+verify_jwt = false

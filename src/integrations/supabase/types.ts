@@ -101,6 +101,101 @@ export type Database = {
         }
         Relationships: []
       }
+      business_entities: {
+        Row: {
+          bank_account_opened: boolean | null
+          business_address: string | null
+          business_name: string | null
+          business_phone: string | null
+          created_at: string
+          ein: string | null
+          entity_type: string | null
+          formation_date: string | null
+          id: string
+          state_of_formation: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_opened?: boolean | null
+          business_address?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          created_at?: string
+          ein?: string | null
+          entity_type?: string | null
+          formation_date?: string | null
+          id?: string
+          state_of_formation?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_opened?: boolean | null
+          business_address?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          created_at?: string
+          ein?: string | null
+          entity_type?: string | null
+          formation_date?: string | null
+          id?: string
+          state_of_formation?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      business_steps: {
+        Row: {
+          business_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string | null
+          step_description: string | null
+          step_number: number
+          step_title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          step_description?: string | null
+          step_number: number
+          step_title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          step_description?: string | null
+          step_number?: number
+          step_title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_steps_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           consent_text: string
@@ -127,6 +222,48 @@ export type Database = {
           ip_address?: string | null
           signed_at?: string
           user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_report_uploads: {
+        Row: {
+          bureau: string | null
+          created_at: string
+          error_message: string | null
+          extracted_score: number | null
+          file_name: string
+          file_size: number | null
+          id: string
+          processed_at: string | null
+          status: string | null
+          tradelines_count: number | null
+          user_id: string
+        }
+        Insert: {
+          bureau?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_score?: number | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          tradelines_count?: number | null
+          user_id: string
+        }
+        Update: {
+          bureau?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_score?: number | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          tradelines_count?: number | null
           user_id?: string
         }
         Relationships: []
