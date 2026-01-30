@@ -13,6 +13,7 @@ import FundingTimeline from "./pages/FundingTimeline";
 import MillionMode from "./pages/MillionMode";
 import Business from "./pages/Business";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="million-mode" element={<MillionMode />} />
             <Route path="business" element={<Business />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="admin" element={<Admin />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
