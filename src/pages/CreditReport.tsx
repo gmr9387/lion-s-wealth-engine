@@ -7,26 +7,16 @@ import {
   CheckCircle2, 
   ChevronDown, 
   ChevronUp,
-  Building2,
   Calendar,
   DollarSign,
   TrendingUp,
-  Shield
+  Shield,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTradelines, useLatestScores, Tradeline } from "@/hooks/useTradelines";
 
-interface Tradeline {
-  id: string;
-  creditorName: string;
-  accountType: string;
-  creditLimit: number;
-  currentBalance: number;
-  paymentStatus: string;
-  isNegative: boolean;
-  dateOpened: string;
-  utilization: number;
-}
-
+// Demo data as fallback
 const demoTradelines: Tradeline[] = [
   {
     id: "1",
@@ -38,6 +28,7 @@ const demoTradelines: Tradeline[] = [
     isNegative: false,
     dateOpened: "Jan 2022",
     utilization: 89,
+    bureau: null,
   },
   {
     id: "2",
@@ -49,6 +40,7 @@ const demoTradelines: Tradeline[] = [
     isNegative: true,
     dateOpened: "Jun 2021",
     utilization: 30,
+    bureau: null,
   },
   {
     id: "3",
@@ -60,6 +52,7 @@ const demoTradelines: Tradeline[] = [
     isNegative: false,
     dateOpened: "Sep 2023",
     utilization: 25,
+    bureau: null,
   },
   {
     id: "4",
@@ -71,28 +64,45 @@ const demoTradelines: Tradeline[] = [
     isNegative: true,
     dateOpened: "Aug 2024",
     utilization: 0,
+    bureau: null,
   },
 ];
 
-const bureauScores = [
-  { bureau: "Experian", score: 562, change: +12 },
-  { bureau: "TransUnion", score: 558, change: +15 },
-  { bureau: "Equifax", score: 554, change: +8 },
+const demoBureauScores = [
+  { bureau: "Experian", score: 562, change: 12 },
+  { bureau: "TransUnion", score: 558, change: 15 },
+  { bureau: "Equifax", score: 554, change: 8 },
 ];
 
 export default function CreditReport() {
   const [expandedTradeline, setExpandedTradeline] = useState<string | null>(null);
+  
+  const { data: tradelines, isLoading: tradelinesLoading } = useTradelines();
+  const { data: latestScores, isLoading: scoresLoading } = useLatestScores();
 
-  const negativeItems = demoTradelines.filter(t => t.isNegative);
-  const positiveItems = demoTradelines.filter(t => !t.isNegative);
-  const totalBalance = demoTradelines.reduce((acc, t) => acc + t.currentBalance, 0);
-  const totalCredit = demoTradelines.filter(t => t.creditLimit > 0).reduce((acc, t) => acc + t.creditLimit, 0);
-  const overallUtilization = Math.round((totalBalance / totalCredit) * 100);
+  // Use real data if available, otherwise fall back to demo
+  const displayTradelines = tradelines && tradelines.length > 0 ? tradelines : demoTradelines;
+  const displayScores = latestScores && latestScores.length > 0 ? latestScores : demoBureauScores;
+  const isDemo = !tradelines || tradelines.length === 0;
+
+  const negativeItems = displayTradelines.filter(t => t.isNegative);
+  const positiveItems = displayTradelines.filter(t => !t.isNegative);
+  const totalBalance = displayTradelines.reduce((acc, t) => acc + t.currentBalance, 0);
+  const totalCredit = displayTradelines.filter(t => t.creditLimit > 0).reduce((acc, t) => acc + t.creditLimit, 0);
+  const overallUtilization = totalCredit > 0 ? Math.round((totalBalance / totalCredit) * 100) : 0;
+
+  if (tradelinesLoading || scoresLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-pulse text-muted-foreground">Loading credit report...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Credit Report</h1>
           <p className="text-muted-foreground mt-1">
@@ -100,20 +110,33 @@ export default function CreditReport() {
           </p>
         </div>
         <Button variant="premium">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          Refresh Report
+          <Plus className="w-4 h-4 mr-2" />
+          Add Tradeline
         </Button>
       </div>
 
+      {/* Demo Notice */}
+      {isDemo && (
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Demo Data</p>
+            <p className="text-xs text-muted-foreground">
+              You're viewing sample data. Add your tradelines to see your real credit report.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Bureau Scores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {bureauScores.map((bureau) => (
+        {displayScores.map((bureau) => (
           <div
             key={bureau.bureau}
-            className="rounded-xl border border-border bg-card p-6 flex items-center gap-6"
+            className="rounded-xl border border-border bg-card p-4 sm:p-6 flex items-center gap-4 sm:gap-6"
           >
             <CreditScoreDial
-              score={bureau.score}
+              score={bureau.score || 0}
               bureau={bureau.bureau}
               className="scale-75"
             />
@@ -122,7 +145,7 @@ export default function CreditReport() {
               <div className="flex items-center gap-2 mt-1">
                 <span className={cn(
                   "text-sm font-medium",
-                  bureau.change > 0 ? "text-success" : "text-destructive"
+                  bureau.change > 0 ? "text-success" : bureau.change < 0 ? "text-destructive" : "text-muted-foreground"
                 )}>
                   {bureau.change > 0 ? "+" : ""}{bureau.change} pts
                 </span>
@@ -137,7 +160,7 @@ export default function CreditReport() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total Accounts</p>
-          <p className="text-2xl font-bold text-foreground">{demoTradelines.length}</p>
+          <p className="text-2xl font-bold text-foreground">{displayTradelines.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Negative Items</p>
@@ -228,11 +251,11 @@ function TradelineCard({
     >
       <div
         onClick={onToggle}
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-card-hover transition-colors"
+        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer hover:bg-card-hover transition-colors gap-4"
       >
         <div className="flex items-center gap-4">
           <div className={cn(
-            "p-2 rounded-lg",
+            "p-2 rounded-lg flex-shrink-0",
             tradeline.isNegative ? "bg-destructive/10" : "bg-success/10"
           )}>
             {tradeline.accountType === "Collection" ? (
@@ -253,8 +276,8 @@ function TradelineCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="text-right">
+        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
+          <div className="text-left sm:text-right">
             <p className="font-medium text-foreground">
               ${tradeline.currentBalance.toLocaleString()}
             </p>
@@ -265,7 +288,7 @@ function TradelineCard({
             )}
           </div>
           <div className={cn(
-            "px-2 py-1 rounded text-xs font-medium",
+            "px-2 py-1 rounded text-xs font-medium whitespace-nowrap",
             tradeline.isNegative
               ? "bg-destructive/20 text-destructive"
               : "bg-success/20 text-success"
@@ -273,9 +296,9 @@ function TradelineCard({
             {tradeline.paymentStatus}
           </div>
           {expanded ? (
-            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+            <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           )}
         </div>
       </div>
@@ -284,14 +307,14 @@ function TradelineCard({
         <div className="px-4 pb-4 border-t border-border pt-4 animate-fade-in">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Date Opened</p>
                 <p className="text-sm font-medium text-foreground">{tradeline.dateOpened}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
+              <DollarSign className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Credit Limit</p>
                 <p className="text-sm font-medium text-foreground">
@@ -300,7 +323,7 @@ function TradelineCard({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              <TrendingUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Utilization</p>
                 <p className={cn(
@@ -313,7 +336,7 @@ function TradelineCard({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-muted-foreground" />
+              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
                 <p className={cn(
@@ -327,7 +350,7 @@ function TradelineCard({
           </div>
 
           {tradeline.isNegative && (
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="glow" size="sm">
                 Dispute This Item
               </Button>

@@ -11,11 +11,13 @@ import {
   ChevronRight,
   Shield,
   Calendar,
-  Building2
+  Building2,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDisputes } from "@/hooks/useDisputes";
 
-interface Dispute {
+interface DisputeDisplay {
   id: string;
   creditor: string;
   bureau: string;
@@ -26,7 +28,7 @@ interface Dispute {
   humanRequired: boolean;
 }
 
-const demoDisputes: Dispute[] = [
+const demoDisputes: DisputeDisplay[] = [
   {
     id: "1",
     creditor: "Discover",
@@ -109,22 +111,49 @@ const statusConfig = {
 
 export default function Disputes() {
   const [filter, setFilter] = useState<string>("all");
+  const { data: disputes, isLoading } = useDisputes();
+
+  // Transform real disputes to display format or use demo
+  const displayDisputes: DisputeDisplay[] = disputes && disputes.length > 0 
+    ? disputes.map(d => ({
+        id: d.id,
+        creditor: d.tradelines?.creditor_name || "Unknown Creditor",
+        bureau: d.bureau.charAt(0).toUpperCase() + d.bureau.slice(1),
+        reason: d.reason,
+        status: d.status || "draft",
+        dateCreated: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        dateSubmitted: d.submitted_at 
+          ? new Date(d.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : undefined,
+        humanRequired: d.human_required || true,
+      }))
+    : demoDisputes;
+
+  const isDemo = !disputes || disputes.length === 0;
 
   const filteredDisputes = filter === "all" 
-    ? demoDisputes 
-    : demoDisputes.filter(d => d.status === filter);
+    ? displayDisputes 
+    : displayDisputes.filter(d => d.status === filter);
 
   const stats = {
-    total: demoDisputes.length,
-    pending: demoDisputes.filter(d => ["draft", "pending_review"].includes(d.status)).length,
-    active: demoDisputes.filter(d => ["submitted", "in_progress"].includes(d.status)).length,
-    resolved: demoDisputes.filter(d => d.status === "resolved").length,
+    total: displayDisputes.length,
+    pending: displayDisputes.filter(d => ["draft", "pending_review"].includes(d.status)).length,
+    active: displayDisputes.filter(d => ["submitted", "in_progress"].includes(d.status)).length,
+    resolved: displayDisputes.filter(d => d.status === "resolved").length,
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dispute Center</h1>
           <p className="text-muted-foreground mt-1">
@@ -136,6 +165,19 @@ export default function Disputes() {
           New Dispute
         </Button>
       </div>
+
+      {/* Demo Notice */}
+      {isDemo && (
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Demo Data</p>
+            <p className="text-xs text-muted-foreground">
+              You're viewing sample disputes. Create a new dispute to start tracking real ones.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -183,7 +225,7 @@ export default function Disputes() {
 
       {/* Compliance Notice */}
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-        <Shield className="w-5 h-5 text-primary mt-0.5" />
+        <Shield className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
         <div>
           <p className="text-sm font-medium text-foreground">FCRA Compliant Disputes</p>
           <p className="text-xs text-muted-foreground">
@@ -202,22 +244,22 @@ export default function Disputes() {
           return (
             <div
               key={dispute.id}
-              className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
+              className="rounded-xl border border-border bg-card p-4 sm:p-5 hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className={cn("p-2 rounded-lg", config.bg)}>
+                  <div className={cn("p-2 rounded-lg flex-shrink-0", config.bg)}>
                     <StatusIcon className={cn("w-5 h-5", config.color)} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold text-foreground">{dispute.creditor}</h3>
                       {dispute.humanRequired && (
                         <Shield className="w-4 h-4 text-warning" />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">{dispute.reason}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Building2 className="w-3 h-3" />
                         {dispute.bureau}
@@ -236,21 +278,21 @@ export default function Disputes() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 self-start sm:self-center">
                   <span className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium",
+                    "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap",
                     config.bg,
                     config.color
                   )}>
                     {config.label}
                   </span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground hidden sm:block" />
                 </div>
               </div>
 
               {/* Action buttons for pending disputes */}
               {dispute.status === "pending_review" && (
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
                   <Button variant="glow" size="sm">
                     <Eye className="w-4 h-4 mr-2" />
                     Review & Approve
