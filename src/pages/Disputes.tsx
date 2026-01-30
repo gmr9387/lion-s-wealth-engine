@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DisputeForm, DisputeFormData } from "@/components/DisputeForm";
+import { ConsentModal } from "@/components/ConsentModal";
 import { 
   FileText, 
   Plus, 
@@ -16,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDisputes } from "@/hooks/useDisputes";
+import { useGenerateDispute } from "@/hooks/useGenerateDispute";
+import { useTradelines } from "@/hooks/useTradelines";
 
 interface DisputeDisplay {
   id: string;
@@ -26,49 +30,8 @@ interface DisputeDisplay {
   dateCreated: string;
   dateSubmitted?: string;
   humanRequired: boolean;
+  letterPreview?: string;
 }
-
-const demoDisputes: DisputeDisplay[] = [
-  {
-    id: "1",
-    creditor: "Discover",
-    bureau: "Experian",
-    reason: "30-day late payment - goodwill removal request",
-    status: "pending_review",
-    dateCreated: "Dec 1, 2024",
-    humanRequired: true,
-  },
-  {
-    id: "2",
-    creditor: "Collections Agency",
-    bureau: "TransUnion",
-    reason: "Debt validation request - unverified collection",
-    status: "submitted",
-    dateCreated: "Nov 28, 2024",
-    dateSubmitted: "Nov 30, 2024",
-    humanRequired: true,
-  },
-  {
-    id: "3",
-    creditor: "Capital One",
-    bureau: "Equifax",
-    reason: "Balance reporting error",
-    status: "in_progress",
-    dateCreated: "Nov 15, 2024",
-    dateSubmitted: "Nov 17, 2024",
-    humanRequired: false,
-  },
-  {
-    id: "4",
-    creditor: "Medical Bill",
-    bureau: "All Bureaus",
-    reason: "HIPAA violation - medical debt dispute",
-    status: "resolved",
-    dateCreated: "Oct 20, 2024",
-    dateSubmitted: "Oct 22, 2024",
-    humanRequired: true,
-  },
-];
 
 const statusConfig = {
   draft: {
@@ -111,10 +74,16 @@ const statusConfig = {
 
 export default function Disputes() {
   const [filter, setFilter] = useState<string>("all");
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingDisputeData, setPendingDisputeData] = useState<DisputeFormData | null>(null);
+  
   const { data: disputes, isLoading } = useDisputes();
+  const { data: tradelines } = useTradelines();
+  const { generate: generateDispute, generating } = useGenerateDispute();
 
-  // Transform real disputes to display format or use demo
-  const displayDisputes: DisputeDisplay[] = disputes && disputes.length > 0 
+  // Transform real disputes to display format
+  const displayDisputes: DisputeDisplay[] = disputes
     ? disputes.map(d => ({
         id: d.id,
         creditor: d.tradelines?.creditor_name || "Unknown Creditor",
@@ -126,10 +95,9 @@ export default function Disputes() {
           ? new Date(d.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
           : undefined,
         humanRequired: d.human_required || true,
+        letterPreview: d.letter_content?.substring(0, 200) || undefined,
       }))
-    : demoDisputes;
-
-  const isDemo = !disputes || disputes.length === 0;
+    : [];
 
   const filteredDisputes = filter === "all" 
     ? displayDisputes 
@@ -140,6 +108,25 @@ export default function Disputes() {
     pending: displayDisputes.filter(d => ["draft", "pending_review"].includes(d.status)).length,
     active: displayDisputes.filter(d => ["submitted", "in_progress"].includes(d.status)).length,
     resolved: displayDisputes.filter(d => d.status === "resolved").length,
+  };
+
+  const handleDisputeSubmit = async (data: DisputeFormData) => {
+    setPendingDisputeData(data);
+    setShowDisputeForm(false);
+    setShowConsentModal(true);
+  };
+
+  const handleConsentComplete = async (consentId: string) => {
+    if (pendingDisputeData) {
+      await generateDispute({
+        tradelineId: pendingDisputeData.tradelineId,
+        bureau: pendingDisputeData.bureau,
+        reason: `${pendingDisputeData.disputeType}: ${pendingDisputeData.reason}`,
+        consentId,
+      });
+      setPendingDisputeData(null);
+    }
+    setShowConsentModal(false);
   };
 
   if (isLoading) {
@@ -160,24 +147,11 @@ export default function Disputes() {
             Track and manage your credit disputes
           </p>
         </div>
-        <Button variant="premium">
+        <Button variant="premium" onClick={() => setShowDisputeForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Dispute
         </Button>
       </div>
-
-      {/* Demo Notice */}
-      {isDemo && (
-        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Demo Data</p>
-            <p className="text-xs text-muted-foreground">
-              You're viewing sample disputes. Create a new dispute to start tracking real ones.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -236,93 +210,113 @@ export default function Disputes() {
       </div>
 
       {/* Disputes List */}
-      <div className="space-y-3">
-        {filteredDisputes.map((dispute) => {
-          const config = statusConfig[dispute.status];
-          const StatusIcon = config.icon;
+      {filteredDisputes.length > 0 ? (
+        <div className="space-y-3">
+          {filteredDisputes.map((dispute) => {
+            const config = statusConfig[dispute.status];
+            const StatusIcon = config.icon;
 
-          return (
-            <div
-              key={dispute.id}
-              className="rounded-xl border border-border bg-card p-4 sm:p-5 hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className={cn("p-2 rounded-lg flex-shrink-0", config.bg)}>
-                    <StatusIcon className={cn("w-5 h-5", config.color)} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-semibold text-foreground">{dispute.creditor}</h3>
-                      {dispute.humanRequired && (
-                        <Shield className="w-4 h-4 text-warning" />
-                      )}
+            return (
+              <div
+                key={dispute.id}
+                className="rounded-xl border border-border bg-card p-4 sm:p-5 hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={cn("p-2 rounded-lg flex-shrink-0", config.bg)}>
+                      <StatusIcon className={cn("w-5 h-5", config.color)} />
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{dispute.reason}</p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-3 h-3" />
-                        {dispute.bureau}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Created {dispute.dateCreated}
-                      </span>
-                      {dispute.dateSubmitted && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-foreground">{dispute.creditor}</h3>
+                        {dispute.humanRequired && (
+                          <Shield className="w-4 h-4 text-warning" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{dispute.reason}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Send className="w-3 h-3" />
-                          Submitted {dispute.dateSubmitted}
+                          <Building2 className="w-3 h-3" />
+                          {dispute.bureau}
                         </span>
-                      )}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Created {dispute.dateCreated}
+                        </span>
+                        {dispute.dateSubmitted && (
+                          <span className="flex items-center gap-1">
+                            <Send className="w-3 h-3" />
+                            Submitted {dispute.dateSubmitted}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-start sm:self-center">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                      config.bg,
+                      config.color
+                    )}>
+                      {config.label}
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground hidden sm:block" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 self-start sm:self-center">
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap",
-                    config.bg,
-                    config.color
-                  )}>
-                    {config.label}
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground hidden sm:block" />
-                </div>
+                {/* Action buttons for pending disputes */}
+                {dispute.status === "pending_review" && (
+                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+                    <Button variant="glow" size="sm">
+                      <Eye className="w-4 h-4 mr-2" />
+                      Review & Approve
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Edit Letter
+                    </Button>
+                  </div>
+                )}
               </div>
-
-              {/* Action buttons for pending disputes */}
-              {dispute.status === "pending_review" && (
-                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-                  <Button variant="glow" size="sm">
-                    <Eye className="w-4 h-4 mr-2" />
-                    Review & Approve
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Edit Letter
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {filteredDisputes.length === 0 && (
+            );
+          })}
+        </div>
+      ) : (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No disputes found</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {filter === "all" ? "No disputes yet" : `No ${filter.replace("_", " ")} disputes`}
+          </h3>
           <p className="text-muted-foreground mb-4">
             {filter === "all" 
-              ? "Start a new dispute to improve your credit report"
-              : `No disputes with status "${filter}"`
+              ? "Start a new dispute to challenge inaccurate items on your credit report"
+              : "No disputes match this filter"
             }
           </p>
-          <Button variant="premium">
+          <Button variant="premium" onClick={() => setShowDisputeForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create Dispute
           </Button>
         </div>
       )}
+
+      {/* Modals */}
+      <DisputeForm
+        open={showDisputeForm}
+        onOpenChange={setShowDisputeForm}
+        onSubmit={handleDisputeSubmit}
+        tradelines={tradelines || []}
+      />
+
+      <ConsentModal
+        open={showConsentModal}
+        onOpenChange={setShowConsentModal}
+        consentType="credit_dispute"
+        title="Dispute Authorization"
+        description="Review and sign to authorize this credit dispute"
+        onConsent={handleConsentComplete}
+        onCancel={() => setPendingDisputeData(null)}
+      />
     </div>
   );
 }

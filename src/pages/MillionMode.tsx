@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConsentModal } from "@/components/ConsentModal";
 import { 
   Crown, 
   Zap, 
@@ -10,12 +11,14 @@ import {
   Lock,
   Target,
   DollarSign,
-  TrendingUp,
-  Calendar
+  Calendar,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMillionMode, FundingSequenceStep } from "@/hooks/useMillionMode";
+import { useLatestScores } from "@/hooks/useTradelines";
 
-const fundingSequence = [
+const defaultFundingSequence = [
   {
     step: 1,
     name: "Credit Union Membership",
@@ -61,51 +64,6 @@ const fundingSequence = [
     status: "locked",
     description: "Discover, Capital One, Chase Freedom",
   },
-  {
-    step: 6,
-    name: "Personal Line of Credit",
-    type: "Funding",
-    funding: "$5,000 - $25,000",
-    timeline: "Month 4-6",
-    status: "locked",
-    description: "Bank personal LOC with established relationship",
-  },
-  {
-    step: 7,
-    name: "Business Entity Formation",
-    type: "Business Credit",
-    funding: "N/A",
-    timeline: "Month 6",
-    status: "locked",
-    description: "LLC formation, EIN, business bank account",
-  },
-  {
-    step: 8,
-    name: "Business Credit Cards",
-    type: "Business Credit",
-    funding: "$10,000 - $50,000",
-    timeline: "Month 6-9",
-    status: "locked",
-    description: "Chase Ink, Amex Business, Capital One Spark",
-  },
-  {
-    step: 9,
-    name: "Business Lines of Credit",
-    type: "Business Funding",
-    funding: "$25,000 - $100,000",
-    timeline: "Month 9-12",
-    status: "locked",
-    description: "Bank business LOC, Kabbage, Fundbox",
-  },
-  {
-    step: 10,
-    name: "SBA Microloans",
-    type: "Business Funding",
-    funding: "$50,000 - $500,000",
-    timeline: "Year 1-2",
-    status: "locked",
-    description: "SBA 7(a), microloans, community lenders",
-  },
 ];
 
 const statusConfig = {
@@ -116,11 +74,43 @@ const statusConfig = {
 };
 
 export default function MillionMode() {
-  const [activating, setActivating] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const { activate, activating, result } = useMillionMode();
+  const { data: scores } = useLatestScores();
+  
+  const currentScore = scores?.[0]?.score || 580;
+  
+  // Use result sequence if available, otherwise use default
+  const sequence = result?.sequence || [];
+  const displaySequence = sequence.length > 0 
+    ? sequence.map((s, index) => ({
+        step: s.step,
+        name: s.product,
+        type: s.provider,
+        funding: `$${s.expectedAmount.toLocaleString()}`,
+        timeline: s.timing,
+        status: index < 3 ? "available" : index < 5 ? "recommended" : "locked",
+        description: s.action,
+        requirements: s.requirements,
+        riskLevel: s.riskLevel,
+      }))
+    : defaultFundingSequence;
 
-  const totalPotential = "$500K - $1M+";
-  const currentUnlocked = 3;
-  const totalSteps = fundingSequence.length;
+  const totalPotential = result?.projectedTotal 
+    ? `$${(result.projectedTotal / 1000).toFixed(0)}K`
+    : "$500K - $1M+";
+  
+  const currentUnlocked = displaySequence.filter(s => s.status !== "locked").length;
+  const totalSteps = displaySequence.length;
+
+  const handleActivate = () => {
+    setShowConsentModal(true);
+  };
+
+  const handleConsentComplete = async (consentId: string) => {
+    setShowConsentModal(false);
+    await activate(consentId);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -136,7 +126,9 @@ export default function MillionMode() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gradient-gold">Million Mode</h1>
-              <p className="text-muted-foreground">Elite funding sequence activated</p>
+              <p className="text-muted-foreground">
+                {result ? "Sequence activated" : "Elite funding sequence"}
+              </p>
             </div>
           </div>
 
@@ -155,26 +147,42 @@ export default function MillionMode() {
               <p className="text-xl font-bold text-foreground">{currentUnlocked}/{totalSteps}</p>
             </div>
             <div className="p-4 rounded-lg bg-card/50 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">Current Phase</p>
-              <p className="text-xl font-bold text-primary">Foundation</p>
+              <p className="text-xs text-muted-foreground mb-1">Your Score</p>
+              <p className="text-xl font-bold text-primary">{currentScore}</p>
             </div>
             <div className="p-4 rounded-lg bg-card/50 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">Next Milestone</p>
-              <p className="text-xl font-bold text-success">$10K</p>
+              <p className="text-xs text-muted-foreground mb-1">Risk Level</p>
+              <p className={cn(
+                "text-xl font-bold",
+                result?.riskLevel === "low" ? "text-success" :
+                result?.riskLevel === "high" ? "text-destructive" : "text-warning"
+              )}>
+                {result?.riskLevel ? result.riskLevel.charAt(0).toUpperCase() + result.riskLevel.slice(1) : "Medium"}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="premium" size="lg" disabled={activating}>
+            <Button 
+              variant="premium" 
+              size="lg" 
+              disabled={activating}
+              onClick={handleActivate}
+            >
               {activating ? (
                 <>
-                  <Zap className="w-5 h-5 animate-pulse" />
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   Activating...
+                </>
+              ) : result ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 mr-2" />
+                  View Active Plan
                 </>
               ) : (
                 <>
-                  <Zap className="w-5 h-5" />
-                  Execute Next Step
+                  <Zap className="w-5 h-5 mr-2" />
+                  Activate Million Mode
                 </>
               )}
             </Button>
@@ -182,6 +190,18 @@ export default function MillionMode() {
               View Full Plan
             </Button>
           </div>
+
+          {/* Warnings from activation */}
+          {result?.warnings && result.warnings.length > 0 && (
+            <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/30">
+              <p className="text-sm font-medium text-warning">Notices:</p>
+              <ul className="text-xs text-muted-foreground mt-1 space-y-1">
+                {result.warnings.map((warning, i) => (
+                  <li key={i}>• {warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
@@ -192,7 +212,7 @@ export default function MillionMode() {
           <p className="text-sm font-medium text-foreground">Human Review Required</p>
           <p className="text-xs text-muted-foreground">
             Each funding application requires your explicit consent and admin approval before submission. 
-            Hard credit pulls are limited to 2 per 48 hours to protect your score.
+            Hard credit pulls are limited to protect your score.
           </p>
         </div>
       </div>
@@ -210,8 +230,8 @@ export default function MillionMode() {
           </div>
 
           <div className="space-y-4">
-            {fundingSequence.map((step, index) => {
-              const config = statusConfig[step.status as keyof typeof statusConfig];
+            {displaySequence.map((step, index) => {
+              const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.locked;
               const isLocked = step.status === "locked";
 
               return (
@@ -282,29 +302,48 @@ export default function MillionMode() {
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">Requirements to Unlock Next Phase</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/30">
-            <CheckCircle2 className="w-5 h-5 text-success" />
+          <div className={cn(
+            "flex items-center gap-3 p-3 rounded-lg border",
+            currentScore >= 620 ? "bg-success/10 border-success/30" : "bg-muted border-border"
+          )}>
+            {currentScore >= 620 ? (
+              <CheckCircle2 className="w-5 h-5 text-success" />
+            ) : (
+              <Target className="w-5 h-5 text-muted-foreground" />
+            )}
             <div>
               <p className="text-sm font-medium text-foreground">Credit Score 620+</p>
-              <p className="text-xs text-success">Achieved: 558 → In Progress</p>
+              <p className={cn("text-xs", currentScore >= 620 ? "text-success" : "text-muted-foreground")}>
+                Current: {currentScore}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
             <Target className="w-5 h-5 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium text-foreground">3+ Months History</p>
-              <p className="text-xs text-muted-foreground">Current: 2 months</p>
+              <p className="text-xs text-muted-foreground">Build tradeline age</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
             <DollarSign className="w-5 h-5 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium text-foreground">Utilization Under 30%</p>
-              <p className="text-xs text-muted-foreground">Current: 89%</p>
+              <p className="text-xs text-muted-foreground">Pay down balances</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Consent Modal */}
+      <ConsentModal
+        open={showConsentModal}
+        onOpenChange={setShowConsentModal}
+        consentType="million_mode"
+        title="Million Mode Authorization"
+        description="Review and sign to activate the Million Mode funding sequence"
+        onConsent={handleConsentComplete}
+      />
     </div>
   );
 }

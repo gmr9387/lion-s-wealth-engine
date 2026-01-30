@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { CreditScoreDial } from "@/components/CreditScoreDial";
 import { Button } from "@/components/ui/button";
+import { TradelineForm } from "@/components/TradelineForm";
+import { ScoreInputModal } from "@/components/ScoreInputModal";
+import { DisputeForm, DisputeFormData } from "@/components/DisputeForm";
+import { ConsentModal } from "@/components/ConsentModal";
 import { 
   CreditCard, 
   AlertTriangle, 
@@ -11,85 +15,73 @@ import {
   DollarSign,
   TrendingUp,
   Shield,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTradelines, useLatestScores, Tradeline } from "@/hooks/useTradelines";
-
-// Demo data as fallback
-const demoTradelines: Tradeline[] = [
-  {
-    id: "1",
-    creditorName: "Capital One",
-    accountType: "Credit Card",
-    creditLimit: 3000,
-    currentBalance: 2680,
-    paymentStatus: "Current",
-    isNegative: false,
-    dateOpened: "Jan 2022",
-    utilization: 89,
-    bureau: null,
-  },
-  {
-    id: "2",
-    creditorName: "Discover",
-    accountType: "Credit Card",
-    creditLimit: 1500,
-    currentBalance: 450,
-    paymentStatus: "30 Days Late (Mar 2024)",
-    isNegative: true,
-    dateOpened: "Jun 2021",
-    utilization: 30,
-    bureau: null,
-  },
-  {
-    id: "3",
-    creditorName: "Chase",
-    accountType: "Credit Card",
-    creditLimit: 500,
-    currentBalance: 125,
-    paymentStatus: "Current",
-    isNegative: false,
-    dateOpened: "Sep 2023",
-    utilization: 25,
-    bureau: null,
-  },
-  {
-    id: "4",
-    creditorName: "Collections Agency",
-    accountType: "Collection",
-    creditLimit: 0,
-    currentBalance: 847,
-    paymentStatus: "In Collections",
-    isNegative: true,
-    dateOpened: "Aug 2024",
-    utilization: 0,
-    bureau: null,
-  },
-];
-
-const demoBureauScores = [
-  { bureau: "Experian", score: 562, change: 12 },
-  { bureau: "TransUnion", score: 558, change: 15 },
-  { bureau: "Equifax", score: 554, change: 8 },
-];
+import { useCreateTradeline, CreateTradelineData } from "@/hooks/useTradelineActions";
+import { useCreditAnalysis } from "@/hooks/useCreditAnalysis";
+import { useGenerateDispute } from "@/hooks/useGenerateDispute";
+import { CreditBureau } from "@/types";
 
 export default function CreditReport() {
   const [expandedTradeline, setExpandedTradeline] = useState<string | null>(null);
+  const [showTradelineForm, setShowTradelineForm] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [selectedTradelineForDispute, setSelectedTradelineForDispute] = useState<Tradeline | undefined>();
+  const [pendingDisputeData, setPendingDisputeData] = useState<DisputeFormData | null>(null);
   
   const { data: tradelines, isLoading: tradelinesLoading } = useTradelines();
   const { data: latestScores, isLoading: scoresLoading } = useLatestScores();
+  const createTradeline = useCreateTradeline();
+  const { analyze, analyzing, result: analysisResult } = useCreditAnalysis();
+  const { generate: generateDispute, generating: generatingDispute } = useGenerateDispute();
 
-  // Use real data if available, otherwise fall back to demo
-  const displayTradelines = tradelines && tradelines.length > 0 ? tradelines : demoTradelines;
-  const displayScores = latestScores && latestScores.length > 0 ? latestScores : demoBureauScores;
-  const isDemo = !tradelines || tradelines.length === 0;
+  // Use real data if available, otherwise show empty state
+  const displayTradelines = tradelines || [];
+  const displayScores = latestScores && latestScores.length > 0 ? latestScores : [];
+  const hasData = displayTradelines.length > 0 || displayScores.length > 0;
 
   const negativeItems = displayTradelines.filter(t => t.isNegative);
   const positiveItems = displayTradelines.filter(t => !t.isNegative);
   const totalBalance = displayTradelines.reduce((acc, t) => acc + t.currentBalance, 0);
   const totalCredit = displayTradelines.filter(t => t.creditLimit > 0).reduce((acc, t) => acc + t.creditLimit, 0);
   const overallUtilization = totalCredit > 0 ? Math.round((totalBalance / totalCredit) * 100) : 0;
+
+  const handleAddTradeline = async (data: CreateTradelineData) => {
+    await createTradeline.mutateAsync({
+      ...data,
+      bureau: data.bureau as CreditBureau,
+    });
+  };
+
+  const handleDisputeClick = (tradeline?: Tradeline) => {
+    setSelectedTradelineForDispute(tradeline);
+    setShowDisputeForm(true);
+  };
+
+  const handleDisputeSubmit = async (data: DisputeFormData) => {
+    // Store the dispute data and show consent modal
+    setPendingDisputeData(data);
+    setShowDisputeForm(false);
+    setShowConsentModal(true);
+  };
+
+  const handleConsentComplete = async (consentId: string) => {
+    if (pendingDisputeData) {
+      await generateDispute({
+        tradelineId: pendingDisputeData.tradelineId,
+        bureau: pendingDisputeData.bureau,
+        reason: `${pendingDisputeData.disputeType}: ${pendingDisputeData.reason}`,
+        consentId,
+      });
+      setPendingDisputeData(null);
+    }
+    setShowConsentModal(false);
+  };
 
   if (tradelinesLoading || scoresLoading) {
     return (
@@ -109,77 +101,114 @@ export default function CreditReport() {
             Full analysis of your credit profile across all bureaus
           </p>
         </div>
-        <Button variant="premium">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Tradeline
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setShowScoreModal(true)}>
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Add Score
+          </Button>
+          <Button variant="outline" onClick={() => analyze()} disabled={analyzing}>
+            <BarChart3 className="w-4 h-4 mr-2" />
+            {analyzing ? "Analyzing..." : "Analyze"}
+          </Button>
+          <Button variant="premium" onClick={() => setShowTradelineForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Tradeline
+          </Button>
+        </div>
       </div>
 
-      {/* Demo Notice */}
-      {isDemo && (
-        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Demo Data</p>
-            <p className="text-xs text-muted-foreground">
-              You're viewing sample data. Add your tradelines to see your real credit report.
-            </p>
+      {/* Empty State */}
+      {!hasData && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-8 text-center">
+          <CreditCard className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No Credit Data Yet</h3>
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+            Start by adding your tradelines and credit scores from your credit reports. 
+            This data powers your action engine and funding projections.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="outline" onClick={() => setShowScoreModal(true)}>
+              Add Score
+            </Button>
+            <Button variant="premium" onClick={() => setShowTradelineForm(true)}>
+              Add Tradeline
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Result */}
+      {analysisResult && (
+        <div className="rounded-xl border border-success/30 bg-success/5 p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
+            <div>
+              <h3 className="font-medium text-foreground">Analysis Complete</h3>
+              <p className="text-sm text-muted-foreground">
+                Score: {analysisResult.score} | Utilization: {analysisResult.utilization}% | 
+                {analysisResult.recommendations.length} recommendations
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Bureau Scores */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {displayScores.map((bureau) => (
-          <div
-            key={bureau.bureau}
-            className="rounded-xl border border-border bg-card p-4 sm:p-6 flex items-center gap-4 sm:gap-6"
-          >
-            <CreditScoreDial
-              score={bureau.score || 0}
-              bureau={bureau.bureau}
-              className="scale-75"
-            />
-            <div>
-              <span className="text-sm text-muted-foreground">{bureau.bureau}</span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={cn(
-                  "text-sm font-medium",
-                  bureau.change > 0 ? "text-success" : bureau.change < 0 ? "text-destructive" : "text-muted-foreground"
-                )}>
-                  {bureau.change > 0 ? "+" : ""}{bureau.change} pts
-                </span>
-                <span className="text-xs text-muted-foreground">this month</span>
+      {displayScores.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {displayScores.map((bureau) => (
+            <div
+              key={bureau.bureau}
+              className="rounded-xl border border-border bg-card p-4 sm:p-6 flex items-center gap-4 sm:gap-6"
+            >
+              <CreditScoreDial
+                score={bureau.score || 0}
+                bureau={bureau.bureau}
+                className="scale-75"
+              />
+              <div>
+                <span className="text-sm text-muted-foreground">{bureau.bureau}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={cn(
+                    "text-sm font-medium",
+                    bureau.change > 0 ? "text-success" : bureau.change < 0 ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {bureau.change > 0 ? "+" : ""}{bureau.change} pts
+                  </span>
+                  <span className="text-xs text-muted-foreground">this month</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Accounts</p>
-          <p className="text-2xl font-bold text-foreground">{displayTradelines.length}</p>
+      {displayTradelines.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Total Accounts</p>
+            <p className="text-2xl font-bold text-foreground">{displayTradelines.length}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Negative Items</p>
+            <p className="text-2xl font-bold text-destructive">{negativeItems.length}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Total Balance</p>
+            <p className="text-2xl font-bold text-foreground">${totalBalance.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Utilization</p>
+            <p className={cn(
+              "text-2xl font-bold",
+              overallUtilization > 50 ? "text-destructive" : overallUtilization > 30 ? "text-warning" : "text-success"
+            )}>
+              {overallUtilization}%
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Negative Items</p>
-          <p className="text-2xl font-bold text-destructive">{negativeItems.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Balance</p>
-          <p className="text-2xl font-bold text-foreground">${totalBalance.toLocaleString()}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Utilization</p>
-          <p className={cn(
-            "text-2xl font-bold",
-            overallUtilization > 50 ? "text-destructive" : overallUtilization > 30 ? "text-warning" : "text-success"
-          )}>
-            {overallUtilization}%
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Negative Items Section */}
       {negativeItems.length > 0 && (
@@ -200,6 +229,7 @@ export default function CreditReport() {
                 onToggle={() => setExpandedTradeline(
                   expandedTradeline === tradeline.id ? null : tradeline.id
                 )}
+                onDispute={() => handleDisputeClick(tradeline)}
               />
             ))}
           </div>
@@ -207,27 +237,59 @@ export default function CreditReport() {
       )}
 
       {/* Positive Items Section */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <CheckCircle2 className="w-5 h-5 text-success" />
-          <h2 className="text-lg font-semibold text-foreground">Positive Accounts</h2>
-          <span className="px-2 py-0.5 bg-success/20 text-success rounded text-xs font-medium">
-            {positiveItems.length} accounts
-          </span>
+      {positiveItems.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle2 className="w-5 h-5 text-success" />
+            <h2 className="text-lg font-semibold text-foreground">Positive Accounts</h2>
+            <span className="px-2 py-0.5 bg-success/20 text-success rounded text-xs font-medium">
+              {positiveItems.length} accounts
+            </span>
+          </div>
+          <div className="space-y-3">
+            {positiveItems.map((tradeline) => (
+              <TradelineCard
+                key={tradeline.id}
+                tradeline={tradeline}
+                expanded={expandedTradeline === tradeline.id}
+                onToggle={() => setExpandedTradeline(
+                  expandedTradeline === tradeline.id ? null : tradeline.id
+                )}
+              />
+            ))}
+          </div>
         </div>
-        <div className="space-y-3">
-          {positiveItems.map((tradeline) => (
-            <TradelineCard
-              key={tradeline.id}
-              tradeline={tradeline}
-              expanded={expandedTradeline === tradeline.id}
-              onToggle={() => setExpandedTradeline(
-                expandedTradeline === tradeline.id ? null : tradeline.id
-              )}
-            />
-          ))}
-        </div>
-      </div>
+      )}
+
+      {/* Modals */}
+      <TradelineForm
+        open={showTradelineForm}
+        onOpenChange={setShowTradelineForm}
+        onSubmit={handleAddTradeline}
+      />
+
+      <ScoreInputModal
+        open={showScoreModal}
+        onOpenChange={setShowScoreModal}
+      />
+
+      <DisputeForm
+        open={showDisputeForm}
+        onOpenChange={setShowDisputeForm}
+        onSubmit={handleDisputeSubmit}
+        tradelines={displayTradelines}
+        preselectedTradeline={selectedTradelineForDispute}
+      />
+
+      <ConsentModal
+        open={showConsentModal}
+        onOpenChange={setShowConsentModal}
+        consentType="credit_dispute"
+        title="Dispute Authorization"
+        description="Review and sign to authorize this credit dispute"
+        onConsent={handleConsentComplete}
+        onCancel={() => setPendingDisputeData(null)}
+      />
     </div>
   );
 }
@@ -236,10 +298,12 @@ function TradelineCard({
   tradeline,
   expanded,
   onToggle,
+  onDispute,
 }: {
   tradeline: Tradeline;
   expanded: boolean;
   onToggle: () => void;
+  onDispute?: () => void;
 }) {
   return (
     <div
@@ -349,9 +413,9 @@ function TradelineCard({
             </div>
           </div>
 
-          {tradeline.isNegative && (
+          {tradeline.isNegative && onDispute && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="glow" size="sm">
+              <Button variant="glow" size="sm" onClick={onDispute}>
                 Dispute This Item
               </Button>
               <Button variant="outline" size="sm">

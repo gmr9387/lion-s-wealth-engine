@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { 
   User, 
@@ -13,35 +14,85 @@ import {
   CreditCard,
   Lock,
   Save,
-  Loader2
+  Loader2,
+  LogOut
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useNavigate } from "react-router-dom";
+
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+}
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [notifications, setNotifications] = useState({
+    scoreUpdates: true,
+    disputeStatus: true,
+    fundingOpportunities: true,
+    actionReminders: true,
+  });
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      setFullName(user?.user_metadata?.full_name || "");
+      
+      if (user) {
+        // Fetch profile from profiles table
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (profileData) {
+          setProfile(profileData);
+          setFullName(profileData.full_name || user?.user_metadata?.full_name || "");
+          setPhone(profileData.phone || "");
+        } else {
+          setFullName(user?.user_metadata?.full_name || "");
+        }
+      }
+      
       setLoading(false);
     };
-    fetchUser();
+    
+    fetchUserAndProfile();
   }, []);
 
   const handleSave = async () => {
+    if (!user) return;
+    
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { full_name: fullName }
+      // Update auth user metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { full_name: fullName.trim() }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Update profile in profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ 
+          full_name: fullName.trim(),
+          phone: phone.trim() || null,
+        })
+        .eq("user_id", user.id);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Settings saved",
@@ -58,6 +109,11 @@ export default function Settings() {
     }
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -69,11 +125,17 @@ export default function Settings() {
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account preferences and security
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your account preferences and security
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleSignOut}>
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
       </div>
 
       {/* Profile Section */}
@@ -92,6 +154,7 @@ export default function Settings() {
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-background"
+              maxLength={100}
             />
           </div>
 
@@ -119,15 +182,16 @@ export default function Settings() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(555) 123-4567"
                 className="pl-10 bg-background"
+                maxLength={20}
               />
             </div>
           </div>
 
           <Button onClick={handleSave} disabled={saving} variant="premium">
             {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
             ) : (
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 mr-2" />
             )}
             Save Changes
           </Button>
@@ -175,20 +239,37 @@ export default function Settings() {
 
         <div className="space-y-4">
           {[
-            { title: "Credit Score Updates", description: "Get notified when your score changes" },
-            { title: "Dispute Status", description: "Updates on your dispute progress" },
-            { title: "Funding Opportunities", description: "New funding options available" },
-            { title: "Action Reminders", description: "Reminders for pending tasks" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border">
+            { 
+              key: "scoreUpdates", 
+              title: "Credit Score Updates", 
+              description: "Get notified when your score changes" 
+            },
+            { 
+              key: "disputeStatus", 
+              title: "Dispute Status", 
+              description: "Updates on your dispute progress" 
+            },
+            { 
+              key: "fundingOpportunities", 
+              title: "Funding Opportunities", 
+              description: "New funding options available" 
+            },
+            { 
+              key: "actionReminders", 
+              title: "Action Reminders", 
+              description: "Reminders for pending tasks" 
+            },
+          ].map((item) => (
+            <div key={item.key} className="flex items-center justify-between p-4 rounded-lg border border-border">
               <div>
                 <p className="font-medium text-foreground">{item.title}</p>
                 <p className="text-sm text-muted-foreground">{item.description}</p>
               </div>
-              <input
-                type="checkbox"
-                defaultChecked
-                className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+              <Switch
+                checked={notifications[item.key as keyof typeof notifications]}
+                onCheckedChange={(checked) => 
+                  setNotifications(prev => ({ ...prev, [item.key]: checked }))
+                }
               />
             </div>
           ))}
