@@ -5,6 +5,7 @@ import { TradelineForm } from "@/components/TradelineForm";
 import { ScoreInputModal } from "@/components/ScoreInputModal";
 import { DisputeForm, DisputeFormData } from "@/components/DisputeForm";
 import { ConsentModal } from "@/components/ConsentModal";
+import { CreditReportUpload } from "@/components/CreditReportUpload";
 import { 
   CreditCard, 
   AlertTriangle, 
@@ -16,7 +17,8 @@ import {
   TrendingUp,
   Shield,
   Plus,
-  BarChart3
+  BarChart3,
+  Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTradelines, useLatestScores, Tradeline } from "@/hooks/useTradelines";
@@ -31,14 +33,21 @@ export default function CreditReport() {
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [selectedTradelineForDispute, setSelectedTradelineForDispute] = useState<Tradeline | undefined>();
   const [pendingDisputeData, setPendingDisputeData] = useState<DisputeFormData | null>(null);
   
-  const { data: tradelines, isLoading: tradelinesLoading } = useTradelines();
-  const { data: latestScores, isLoading: scoresLoading } = useLatestScores();
+  const { data: tradelines, isLoading: tradelinesLoading, refetch: refetchTradelines } = useTradelines();
+  const { data: latestScores, isLoading: scoresLoading, refetch: refetchScores } = useLatestScores();
   const createTradeline = useCreateTradeline();
   const { analyze, analyzing, result: analysisResult } = useCreditAnalysis();
   const { generate: generateDispute, generating: generatingDispute } = useGenerateDispute();
+
+  const handleUploadSuccess = () => {
+    refetchTradelines();
+    refetchScores();
+    setShowUpload(false);
+  };
 
   // Use real data if available, otherwise show empty state
   const displayTradelines = tradelines || [];
@@ -102,6 +111,10 @@ export default function CreditReport() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setShowUpload(!showUpload)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import PDF
+          </Button>
           <Button variant="outline" onClick={() => setShowScoreModal(true)}>
             <TrendingUp className="w-4 h-4 mr-2" />
             Add Score
@@ -116,6 +129,14 @@ export default function CreditReport() {
           </Button>
         </div>
       </div>
+
+      {/* PDF Upload Section */}
+      {showUpload && (
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Import Credit Report</h2>
+          <CreditReportUpload onSuccess={handleUploadSuccess} />
+        </div>
+      )}
 
       {/* Empty State */}
       {!hasData && (
