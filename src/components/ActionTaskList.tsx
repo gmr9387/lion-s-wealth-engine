@@ -1,11 +1,12 @@
-import { CheckCircle2, Circle, Clock, AlertTriangle, ChevronRight, Shield } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, ChevronRight, Shield, Play, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export interface ActionTask {
   id: string;
   title: string;
   description?: string;
-  status: "pending" | "in_progress" | "completed" | "requires_approval";
+  status: "pending" | "in_progress" | "completed" | "requires_approval" | "failed";
   priority: "critical" | "high" | "medium" | "low";
   estimatedImpact?: number;
   dueDate?: string;
@@ -15,6 +16,8 @@ export interface ActionTask {
 interface ActionTaskListProps {
   tasks: ActionTask[];
   onTaskClick?: (task: ActionTask) => void;
+  onComplete?: (taskId: string) => void;
+  onStart?: (taskId: string) => void;
   className?: string;
 }
 
@@ -39,6 +42,11 @@ const statusConfig = {
     color: "text-warning",
     bg: "bg-warning/10",
   },
+  failed: {
+    icon: AlertTriangle,
+    color: "text-destructive",
+    bg: "bg-destructive/10",
+  },
 };
 
 const priorityColors = {
@@ -48,7 +56,7 @@ const priorityColors = {
   low: "border-l-muted",
 };
 
-export function ActionTaskList({ tasks, onTaskClick, className }: ActionTaskListProps) {
+export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, className }: ActionTaskListProps) {
   return (
     <div className={cn("space-y-2", className)}>
       {tasks.map((task, index) => {
@@ -61,8 +69,8 @@ export function ActionTaskList({ tasks, onTaskClick, className }: ActionTaskList
             onClick={() => onTaskClick?.(task)}
             className={cn(
               "group relative flex items-center gap-4 p-4 rounded-lg border-l-4 bg-card border border-border",
-              "transition-all duration-200 cursor-pointer",
-              "hover:bg-card-hover hover:border-primary/30",
+              "transition-all duration-200",
+              onTaskClick && "cursor-pointer hover:bg-card-hover hover:border-primary/30",
               priorityColors[task.priority],
               "animate-fade-in"
             )}
@@ -102,8 +110,38 @@ export function ActionTaskList({ tasks, onTaskClick, className }: ActionTaskList
               </div>
             </div>
 
-            {/* Arrow */}
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {task.status === "pending" && onStart && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStart(task.id);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Play className="w-4 h-4" />
+                </Button>
+              )}
+              {task.status === "in_progress" && onComplete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onComplete(task.id);
+                  }}
+                  className="h-8 w-8 p-0 text-success hover:text-success"
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+              )}
+              {onTaskClick && (
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              )}
+            </div>
           </div>
         );
       })}
