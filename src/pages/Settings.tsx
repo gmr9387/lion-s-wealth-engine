@@ -15,11 +15,15 @@ import {
   Lock,
   Save,
   Loader2,
-  LogOut
+  LogOut,
+  RefreshCw,
+  ExternalLink
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
+import { SubscriptionCard } from "@/components/SubscriptionCard";
+import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 
 interface Profile {
   id: string;
@@ -31,6 +35,7 @@ interface Profile {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +49,35 @@ export default function Settings() {
     fundingOpportunities: true,
     actionReminders: true,
   });
+
+  const {
+    subscribed,
+    tier,
+    subscriptionEnd,
+    loading: subscriptionLoading,
+    checkSubscription,
+    createCheckout,
+    openCustomerPortal,
+    checkoutLoading,
+    portalLoading,
+  } = useSubscription();
+
+  // Handle subscription success/cancel from URL params
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get("subscription");
+    if (subscriptionStatus === "success") {
+      toast({
+        title: "Subscription successful!",
+        description: "Welcome to CWE-X! Your subscription is now active.",
+      });
+      checkSubscription();
+    } else if (subscriptionStatus === "canceled") {
+      toast({
+        title: "Checkout canceled",
+        description: "You can subscribe anytime from Settings.",
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchUserAndProfile = async () => {
@@ -125,7 +159,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
+    <div className="space-y-6 animate-fade-in max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -281,18 +315,66 @@ export default function Settings() {
       </div>
 
       {/* Subscription Section */}
-      <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-card to-accent/10 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <CreditCard className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Subscription</h2>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <CreditCard className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Subscription</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkSubscription}
+            disabled={subscriptionLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${subscriptionLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Current Plan</p>
-            <p className="text-xl font-bold text-gradient-gold">Elite Member</p>
+        {subscribed && tier && (
+          <div className="mb-6 p-4 rounded-lg bg-success/10 border border-success/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Current Plan</p>
+                <p className="text-xl font-bold text-gradient-gold">
+                  {SUBSCRIPTION_TIERS[tier].name}
+                </p>
+                {subscriptionEnd && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Renews {new Date(subscriptionEnd).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                onClick={openCustomerPortal}
+                disabled={portalLoading}
+              >
+                {portalLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                )}
+                Manage
+              </Button>
+            </div>
           </div>
-          <Button variant="outline">Manage Plan</Button>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SubscriptionCard
+            tierKey="starter"
+            currentTier={tier}
+            onSubscribe={createCheckout}
+            loading={checkoutLoading}
+          />
+          <SubscriptionCard
+            tierKey="elite"
+            currentTier={tier}
+            onSubscribe={createCheckout}
+            loading={checkoutLoading}
+          />
         </div>
       </div>
 
