@@ -2,3 +2,15 @@ project_id = "fdgkssjogzwagchtxerp"
 
 [functions.next_best_move]
 verify_jwt = false
+
+[functions.analyze-credit]
+verify_jwt = false
+
+[functions.generate-dispute]
+verify_jwt = false
+
+[functions.funding-timeline]
+verify_jwt = false
+
+[functions.million-mode]
+verify_jwt = false
