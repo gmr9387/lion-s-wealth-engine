@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 import { CreditScoreDial } from "@/components/CreditScoreDial";
 import { NextBestMoveCard } from "@/components/NextBestMoveCard";
-import { ActionTaskList, ActionTask } from "@/components/ActionTaskList";
+import { ActionTaskList } from "@/components/ActionTaskList";
 import { TimelineChart } from "@/components/TimelineChart";
 import { FundingProbabilityCard } from "@/components/FundingProbabilityCard";
 import { StatCard } from "@/components/StatCard";
-import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap } from "lucide-react";
-import { User } from "@supabase/supabase-js";
+import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNextBestMove } from "@/hooks/useNextBestMove";
+import { Button } from "@/components/ui/button";
 
-// Demo data for EXAMPLE_USER scenario
+// Demo data for score history (will be replaced with real data later)
 const demoScoreHistory = [
   { date: "Oct", score: 520 },
   { date: "Nov", score: 535 },
@@ -20,47 +21,6 @@ const demoScoreHistory = [
   { date: "Apr", score: 660, projected: true },
 ];
 
-const demoTasks: ActionTask[] = [
-  {
-    id: "1",
-    title: "Pay down Capital One balance to 30%",
-    description: "Reduce utilization from 89% to under 30% for +35 point impact",
-    status: "pending",
-    priority: "critical",
-    estimatedImpact: 35,
-    dueDate: "Dec 15",
-    humanRequired: false,
-  },
-  {
-    id: "2",
-    title: "Dispute late payment on Discover",
-    description: "30-day late from March 2024 - goodwill removal eligible",
-    status: "pending",
-    priority: "high",
-    estimatedImpact: 20,
-    humanRequired: true,
-  },
-  {
-    id: "3",
-    title: "Apply for secured card",
-    description: "OpenSky or Discover It Secured - build positive history",
-    status: "pending",
-    priority: "medium",
-    estimatedImpact: 15,
-    dueDate: "Dec 20",
-    humanRequired: true,
-  },
-  {
-    id: "4",
-    title: "Request credit limit increase",
-    description: "Soft pull CLI on existing Capital One card",
-    status: "in_progress",
-    priority: "medium",
-    estimatedImpact: 10,
-    humanRequired: false,
-  },
-];
-
 const fundingTargets = [
   { amount: 10000, probability: 85, confidence: "high" as const, date: "90 days", requirements: ["Score 620+", "3 months history"] },
   { amount: 25000, probability: 65, confidence: "medium" as const, date: "6 months", requirements: ["Score 680+", "Income verification"] },
@@ -68,25 +28,43 @@ const fundingTargets = [
 ];
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const { 
+    actions, 
+    nextBestMove, 
+    loading: actionsLoading, 
+    generating, 
+    generateActions,
+    completeAction,
+    startAction,
+  } = useNextBestMove();
 
+  // Auto-generate actions on first load if none exist
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    };
-    fetchUser();
-  }, []);
+    if (!actionsLoading && actions.length === 0 && user) {
+      generateActions();
+    }
+  }, [actionsLoading, actions.length, user]);
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
       </div>
     );
   }
+
+  // Map actions to ActionTask format
+  const actionTasks = actions.map((action) => ({
+    id: action.id,
+    title: action.title,
+    description: action.description || "",
+    status: action.status || "pending",
+    priority: action.priority || "medium",
+    estimatedImpact: action.estimated_impact || 0,
+    dueDate: action.due_date ? new Date(action.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : undefined,
+    humanRequired: action.human_required || false,
+  }));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -100,9 +78,21 @@ export default function Dashboard() {
             Your credit transformation journey continues
           </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-          <Shield className="w-5 h-5 text-primary" />
-          <span className="text-sm font-medium text-primary">All actions secured</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generateActions}
+            disabled={generating}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+            {generating ? 'Analyzing...' : 'Refresh Actions'}
+          </Button>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+            <Shield className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-primary">All actions secured</span>
+          </div>
         </div>
       </div>
 
@@ -125,8 +115,8 @@ export default function Dashboard() {
           iconColor="text-success"
         />
         <StatCard
-          title="Active Disputes"
-          value="3"
+          title="Active Actions"
+          value={String(actions.length)}
           icon={Target}
           iconColor="text-warning"
         />
@@ -156,14 +146,28 @@ export default function Dashboard() {
             </div>
 
             {/* Next Best Move */}
-            <NextBestMoveCard
-              title="Pay Down Capital One"
-              description="Reducing your balance from $2,680 to $900 will drop utilization from 89% to 30%, potentially adding 35+ points."
-              impact={35}
-              urgency="critical"
-              estimatedTime="2-3 days"
-              category="Utilization"
-            />
+            {nextBestMove ? (
+              <NextBestMoveCard
+                title={nextBestMove.title}
+                description={nextBestMove.description || "Take this action to improve your credit."}
+                impact={nextBestMove.estimated_impact || 20}
+                urgency={nextBestMove.priority || "medium"}
+                estimatedTime="2-3 days"
+                category={nextBestMove.action_type.replace(/_/g, " ")}
+                onAction={() => startAction(nextBestMove.id)}
+              />
+            ) : (
+              <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center justify-center text-center">
+                <Zap className="w-12 h-12 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">All Caught Up!</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  No pending actions. Click refresh to analyze for new opportunities.
+                </p>
+                <Button variant="outline" size="sm" onClick={generateActions} disabled={generating}>
+                  {generating ? 'Analyzing...' : 'Check for Actions'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Timeline Chart */}
@@ -184,7 +188,24 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-foreground">Action Queue</h2>
             <Zap className="w-5 h-5 text-primary" />
           </div>
-          <ActionTaskList tasks={demoTasks} />
+          {actionsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-pulse text-muted-foreground">Loading actions...</div>
+            </div>
+          ) : actionTasks.length > 0 ? (
+            <ActionTaskList 
+              tasks={actionTasks} 
+              onComplete={completeAction}
+              onStart={startAction}
+            />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="mb-2">No pending actions</p>
+              <Button variant="ghost" size="sm" onClick={generateActions} disabled={generating}>
+                Generate Actions
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
 project_id = "fdgkssjogzwagchtxerp"
 
 [functions.next_best_move]
-verify_jwt = true
+verify_jwt = false
