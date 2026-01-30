@@ -26,7 +26,7 @@ export interface FundingTimelineResult {
 export function useFundingTimeline() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FundingTimelineResult | null>(null);
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const calculateProjections = async (targets?: number[]) => {
@@ -85,6 +85,7 @@ export function useFundingTimeline() {
   return {
     calculateProjections,
     loading,
+    authLoading,
     result,
     clearResult: () => setResult(null),
   };

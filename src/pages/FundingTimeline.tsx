@@ -33,17 +33,17 @@ function getStatus(probability: number): "achievable" | "on-track" | "projected"
 }
 
 export default function FundingTimeline() {
-  const { calculateProjections, loading, result } = useFundingTimeline();
+  const { calculateProjections, loading, authLoading, result } = useFundingTimeline();
   const { data: scoreHistory } = useScoreHistory();
   const [hasCalculated, setHasCalculated] = useState(false);
 
-  // Auto-calculate on first load
+  // Auto-calculate on first load (wait for auth to be ready)
   useEffect(() => {
-    if (!hasCalculated && !loading && !result) {
+    if (!hasCalculated && !loading && !authLoading && !result) {
       calculateProjections();
       setHasCalculated(true);
     }
-  }, [hasCalculated, loading, result]);
+  }, [hasCalculated, loading, authLoading, result]);
 
   const projections = result?.projections || [];
   const currentProfile = result?.currentProfile;
