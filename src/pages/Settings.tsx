@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
+import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 
 interface Profile {
   id: string;
@@ -36,6 +37,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState({
     scoreUpdates: true,
     disputeStatus: true,
@@ -214,7 +216,9 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Change your account password</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">Change</Button>
+            <Button variant="outline" size="sm" onClick={() => setPasswordDialogOpen(true)}>
+              Change
+            </Button>
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-lg border border-border">
@@ -291,6 +295,12 @@ export default function Settings() {
           <Button variant="outline">Manage Plan</Button>
         </div>
       </div>
+
+      {/* Password Change Dialog */}
+      <PasswordChangeDialog 
+        open={passwordDialogOpen} 
+        onOpenChange={setPasswordDialogOpen} 
+      />
     </div>
   );
 }
