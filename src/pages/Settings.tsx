@@ -17,13 +17,17 @@ import {
   Loader2,
   LogOut,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
+  ShieldOff
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
+import { useMfaStatus } from "@/hooks/useMfaStatus";
 
 interface Profile {
   id: string;
@@ -43,6 +47,9 @@ export default function Settings() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false);
+  const { hasMfa, factors, loading: mfaLoading, checkMfaStatus, unenrollMfa } = useMfaStatus();
+  const [disablingMfa, setDisablingMfa] = useState(false);
   const [notifications, setNotifications] = useState({
     scoreUpdates: true,
     disputeStatus: true,
@@ -257,13 +264,59 @@ export default function Settings() {
 
           <div className="flex items-center justify-between p-4 rounded-lg border border-border">
             <div className="flex items-center gap-3">
-              <Shield className="w-5 h-5 text-muted-foreground" />
+              {hasMfa ? (
+                <ShieldCheck className="w-5 h-5 text-success" />
+              ) : (
+                <Shield className="w-5 h-5 text-muted-foreground" />
+              )}
               <div>
                 <p className="font-medium text-foreground">Two-Factor Authentication</p>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasMfa ? "Your account is protected with 2FA" : "Add an extra layer of security"}
+                </p>
               </div>
             </div>
-            <Button variant="outline" size="sm">Enable</Button>
+            {mfaLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : hasMfa ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={disablingMfa}
+                onClick={async () => {
+                  if (factors[0]?.id) {
+                    setDisablingMfa(true);
+                    const result = await unenrollMfa(factors[0].id);
+                    setDisablingMfa(false);
+                    if (result.success) {
+                      toast({
+                        title: "2FA Disabled",
+                        description: "Two-factor authentication has been removed from your account.",
+                      });
+                    } else {
+                      toast({
+                        title: "Failed to disable 2FA",
+                        description: result.error,
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
+              >
+                {disablingMfa ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <ShieldOff className="w-4 h-4 mr-1" />
+                    Disable
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setTwoFactorDialogOpen(true)}>
+                Enable
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -382,6 +435,13 @@ export default function Settings() {
       <PasswordChangeDialog 
         open={passwordDialogOpen} 
         onOpenChange={setPasswordDialogOpen} 
+      />
+
+      {/* Two-Factor Setup Dialog */}
+      <TwoFactorSetup
+        open={twoFactorDialogOpen}
+        onOpenChange={setTwoFactorDialogOpen}
+        onSuccess={checkMfaStatus}
       />
     </div>
   );
