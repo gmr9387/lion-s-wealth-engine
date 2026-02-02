@@ -78,7 +78,7 @@ export function CreditScoreDial({
 
   return (
     <div className={cn("relative flex flex-col items-center", className)}>
-      <div className="relative w-48 h-48">
+      <div className="relative w-36 h-36 sm:w-48 sm:h-48">
         {/* Background glow */}
         <div 
           className={cn(
@@ -134,20 +134,20 @@ export function CreditScoreDial({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span 
             className={cn(
-              "text-5xl font-bold tracking-tight transition-colors duration-300 font-mono",
+              "text-3xl sm:text-5xl font-bold tracking-tight transition-colors duration-300 font-mono",
               getScoreColorClass(animatedScore)
             )}
           >
             {animatedScore}
           </span>
           <span className={cn(
-            "text-sm font-medium mt-1 transition-colors duration-300",
+            "text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 transition-colors duration-300",
             getScoreColorClass(animatedScore)
           )}>
             {getScoreLabel(animatedScore)}
           </span>
           {bureau && (
-            <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 uppercase tracking-wider">
               {bureau}
             </span>
           )}

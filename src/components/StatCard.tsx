@@ -26,7 +26,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all duration-300",
+        "group relative overflow-hidden rounded-xl border border-border bg-card p-3 sm:p-5 transition-all duration-300",
         "hover:border-primary/30 hover:shadow-lg",
         className
       )}
@@ -36,24 +36,24 @@ export function StatCard({
 
       <div className="relative">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-muted-foreground font-medium">{title}</span>
-          <div className={cn("p-2 rounded-lg bg-primary/10", iconColor.replace('text-', 'bg-').replace('primary', 'primary/10'))}>
-            <Icon className={cn("w-5 h-5", iconColor)} />
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <span className="text-xs sm:text-sm text-muted-foreground font-medium truncate mr-2">{title}</span>
+          <div className={cn("p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0", iconColor.replace('text-', 'bg-').replace('primary', 'primary/10'))}>
+            <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", iconColor)} />
           </div>
         </div>
 
         {/* Value */}
-        <div className="text-2xl font-bold text-foreground mb-2">{value}</div>
+        <div className="text-xl sm:text-2xl font-bold text-foreground mb-1 sm:mb-2">{value}</div>
 
         {/* Change indicator */}
         {change !== undefined && (
-          <div className="flex items-center gap-1.5">
-            {isPositive && <TrendingUp className="w-4 h-4 text-success" />}
-            {isNegative && <TrendingDown className="w-4 h-4 text-destructive" />}
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+            {isPositive && <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-success" />}
+            {isNegative && <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />}
             <span
               className={cn(
-                "text-sm font-medium",
+                "text-xs sm:text-sm font-medium",
                 isPositive && "text-success",
                 isNegative && "text-destructive",
                 !isPositive && !isNegative && "text-muted-foreground"
@@ -61,7 +61,7 @@ export function StatCard({
             >
               {isPositive && "+"}
               {change}
-              {changeLabel && <span className="text-muted-foreground ml-1">{changeLabel}</span>}
+              {changeLabel && <span className="text-muted-foreground ml-1 text-[10px] sm:text-xs">{changeLabel}</span>}
             </span>
           </div>
         )}

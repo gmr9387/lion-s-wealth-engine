@@ -51,7 +51,7 @@ export function NextBestMoveCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all duration-300",
+        "group relative overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-6 transition-all duration-300",
         "hover:border-primary/50 hover:shadow-lg",
         config.glow,
         className
@@ -62,17 +62,17 @@ export function NextBestMoveCard({
       
       <div className="relative">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Zap className="w-5 h-5 text-primary" />
+        <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">
               {category}
             </span>
           </div>
           <span className={cn(
-            "px-2.5 py-1 rounded-full text-xs font-medium border",
+            "px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border flex-shrink-0",
             config.color
           )}>
             {config.label}
@@ -80,23 +80,23 @@ export function NextBestMoveCard({
         </div>
 
         {/* Content */}
-        <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1.5 sm:mb-2 group-hover:text-primary transition-colors line-clamp-2">
           {title}
         </h3>
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+        <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 line-clamp-2">
           {description}
         </p>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-1.5 text-sm">
-            <TrendingUp className="w-4 h-4 text-success" />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm">
+            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
             <span className="text-success font-medium">+{impact} pts</span>
-            <span className="text-muted-foreground">potential</span>
+            <span className="text-muted-foreground hidden xs:inline">potential</span>
           </div>
           {estimatedTime && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
+            <div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-muted-foreground">
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{estimatedTime}</span>
             </div>
           )}
