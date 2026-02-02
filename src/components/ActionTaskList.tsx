@@ -68,7 +68,7 @@ export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, classN
             key={task.id}
             onClick={() => onTaskClick?.(task)}
             className={cn(
-              "group relative flex items-center gap-4 p-4 rounded-lg border-l-4 bg-card border border-border",
+              "group relative flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border-l-4 bg-card border border-border",
               "transition-all duration-200",
               onTaskClick && "cursor-pointer hover:bg-card-hover hover:border-primary/30",
               priorityColors[task.priority],
@@ -77,33 +77,33 @@ export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, classN
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {/* Status Icon */}
-            <div className={cn("p-2 rounded-lg", config.bg)}>
-              <StatusIcon className={cn("w-5 h-5", config.color)} />
+            <div className={cn("p-1.5 sm:p-2 rounded-lg flex-shrink-0", config.bg)}>
+              <StatusIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", config.color)} />
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-medium text-foreground truncate">
+              <div className="flex items-start sm:items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 sm:truncate">
                   {task.title}
                 </h4>
                 {task.humanRequired && (
-                  <Shield className="w-4 h-4 text-warning flex-shrink-0" />
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-warning flex-shrink-0 mt-0.5 sm:mt-0" />
                 )}
               </div>
               {task.description && (
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
                   {task.description}
                 </p>
               )}
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 flex-wrap">
                 {task.estimatedImpact && (
-                  <span className="text-xs text-success font-medium">
+                  <span className="text-[10px] sm:text-xs text-success font-medium">
                     +{task.estimatedImpact} pts
                   </span>
                 )}
                 {task.dueDate && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">
                     Due {task.dueDate}
                   </span>
                 )}
@@ -111,7 +111,7 @@ export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, classN
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {task.status === "pending" && onStart && (
                 <Button
                   variant="ghost"
@@ -120,9 +120,9 @@ export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, classN
                     e.stopPropagation();
                     onStart(task.id);
                   }}
-                  className="h-8 w-8 p-0"
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                 >
-                  <Play className="w-4 h-4" />
+                  <Play className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               )}
               {task.status === "in_progress" && onComplete && (
@@ -133,13 +133,13 @@ export function ActionTaskList({ tasks, onTaskClick, onComplete, onStart, classN
                     e.stopPropagation();
                     onComplete(task.id);
                   }}
-                  className="h-8 w-8 p-0 text-success hover:text-success"
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-success hover:text-success"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               )}
               {onTaskClick && (
-                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-hover:text-primary transition-colors hidden xs:block" />
               )}
             </div>
           </div>

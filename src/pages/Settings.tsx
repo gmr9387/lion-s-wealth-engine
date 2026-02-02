@@ -166,16 +166,16 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage your account preferences and security
           </p>
         </div>
-        <Button variant="outline" onClick={handleSignOut}>
+        <Button variant="outline" size="sm" onClick={handleSignOut} className="w-fit">
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
         </Button>
@@ -415,7 +415,7 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <SubscriptionCard
             tierKey="starter"
             currentTier={tier}

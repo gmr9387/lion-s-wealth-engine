@@ -54,7 +54,7 @@ export function FundingProbabilityCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card p-5 transition-all duration-300",
+        "group relative overflow-hidden rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300",
         "hover:shadow-lg cursor-pointer",
         config.border,
         className
@@ -71,30 +71,30 @@ export function FundingProbabilityCard({
 
       <div className="relative">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">Funding Target</span>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Funding Target</span>
           </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-hover:text-primary transition-colors" />
         </div>
 
         {/* Amount */}
-        <div className="mb-4">
-          <span className="text-3xl font-bold text-gradient-gold">
+        <div className="mb-3 sm:mb-4">
+          <span className="text-2xl sm:text-3xl font-bold text-gradient-gold">
             {formatCurrency(targetAmount)}
           </span>
         </div>
 
         {/* Probability */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Approval Probability</span>
-            <span className={cn("text-lg font-bold", config.color)}>
+        <div className="mb-3 sm:mb-4">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span className="text-xs sm:text-sm text-muted-foreground">Approval Probability</span>
+            <span className={cn("text-base sm:text-lg font-bold", config.color)}>
               {probability}%
             </span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={cn("h-full rounded-full transition-all duration-1000", config.bg.replace('/10', ''))}
               style={{ 
@@ -107,8 +107,8 @@ export function FundingProbabilityCard({
 
         {/* Target Date */}
         {targetDate && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Target: {targetDate}</span>
           </div>
         )}
