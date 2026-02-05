@@ -2,6 +2,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile, ProfileUpdate, UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+ 
+ const ONBOARDING_KEY = "cwe-x-onboarding-complete";
+ 
+ export function useOnboardingStatus() {
+   const checkComplete = () => {
+     return localStorage.getItem(ONBOARDING_KEY) === "true";
+   };
+ 
+   const markComplete = () => {
+     localStorage.setItem(ONBOARDING_KEY, "true");
+   };
+ 
+   const reset = () => {
+     localStorage.removeItem(ONBOARDING_KEY);
+   };
+ 
+   return { checkComplete, markComplete, reset };
+ }
 
 export function useProfile() {
   return useQuery({
