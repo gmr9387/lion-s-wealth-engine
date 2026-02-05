@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { Link } from "react-router-dom";
+ import { DemoVideoModal } from "@/components/DemoVideoModal";
 
 const features = [
   {
@@ -58,6 +59,7 @@ const stats = [
 
 export default function Index() {
   const navigate = useNavigate();
+   const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -127,7 +129,7 @@ export default function Index() {
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Button variant="outline" size="xl" className="text-lg">
+               <Button variant="outline" size="xl" className="text-lg" onClick={() => setShowDemo(true)}>
                 Watch Demo
               </Button>
             </div>
@@ -222,6 +224,8 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+       <DemoVideoModal open={showDemo} onOpenChange={setShowDemo} />
     </div>
   );
 }

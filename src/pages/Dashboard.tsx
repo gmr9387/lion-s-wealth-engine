@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+ import { useEffect, useState } from "react";
 import { CreditScoreDial } from "@/components/CreditScoreDial";
 import { NextBestMoveCard } from "@/components/NextBestMoveCard";
 import { ActionTaskList } from "@/components/ActionTaskList";
@@ -9,6 +9,8 @@ import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } fr
 import { useAuth } from "@/hooks/useAuth";
 import { useNextBestMove } from "@/hooks/useNextBestMove";
 import { Button } from "@/components/ui/button";
+ import { OnboardingWizard } from "@/components/OnboardingWizard";
+ import { useOnboardingStatus } from "@/hooks/useProfile";
 
 // Demo data for score history (will be replaced with real data later)
 const demoScoreHistory = [
@@ -29,6 +31,8 @@ const fundingTargets = [
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
+   const [showOnboarding, setShowOnboarding] = useState(false);
+   const { checkComplete, markComplete } = useOnboardingStatus();
   const { 
     actions, 
     nextBestMove, 
@@ -45,6 +49,18 @@ export default function Dashboard() {
       generateActions();
     }
   }, [actionsLoading, actions.length, user]);
+ 
+   // Show onboarding for new users
+   useEffect(() => {
+     if (user && !authLoading && !checkComplete()) {
+       setShowOnboarding(true);
+     }
+   }, [user, authLoading]);
+ 
+   const handleOnboardingComplete = () => {
+     markComplete();
+     setShowOnboarding(false);
+   };
 
   if (authLoading) {
     return (
@@ -225,6 +241,12 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+       <OnboardingWizard 
+         open={showOnboarding} 
+         onOpenChange={setShowOnboarding} 
+         onComplete={handleOnboardingComplete}
+       />
     </div>
   );
 }
