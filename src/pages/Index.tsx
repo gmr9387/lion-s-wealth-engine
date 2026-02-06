@@ -15,7 +15,8 @@ import {
   DollarSign
 } from "lucide-react";
 import { Link } from "react-router-dom";
- import { DemoVideoModal } from "@/components/DemoVideoModal";
+import { DemoVideoModal } from "@/components/DemoVideoModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const features = [
   {
@@ -59,7 +60,7 @@ const stats = [
 
 export default function Index() {
   const navigate = useNavigate();
-   const [showDemo, setShowDemo] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -76,13 +77,14 @@ export default function Index() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-gold">
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/auth">
               <Button variant="ghost">Sign In</Button>
             </Link>
@@ -129,7 +131,7 @@ export default function Index() {
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-               <Button variant="outline" size="xl" className="text-lg" onClick={() => setShowDemo(true)}>
+              <Button variant="outline" size="xl" className="text-lg" onClick={() => setShowDemo(true)}>
                 Watch Demo
               </Button>
             </div>
@@ -217,16 +219,24 @@ export default function Index() {
               <span className="font-semibold text-foreground">Lion's Wealth Engine</span>
               <span className="text-sm text-muted-foreground">© 2025</span>
             </div>
-            <p className="text-xs text-muted-foreground text-center max-w-2xl">
-              Lion's Wealth Engine is an AI-guided credit optimization platform. We generate documents and provide strategy—you execute the actions. 
-              We are not a credit repair organization. All actions require your e-sign consent and comply with FCRA/FDCPA regulations. 
-              Individual results vary based on credit profile and user effort.
-            </p>
+            <div className="flex items-center gap-4">
+              <Link to="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                Terms of Service
+              </Link>
+              <Link to="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground text-center mt-4 max-w-2xl mx-auto">
+            Lion's Wealth Engine is an AI-guided credit optimization platform. We generate documents and provide strategy—you execute the actions. 
+            We are not a credit repair organization. All actions require your e-sign consent and comply with FCRA/FDCPA regulations. 
+            Individual results vary based on credit profile and user effort.
+          </p>
         </div>
       </footer>
 
-       <DemoVideoModal open={showDemo} onOpenChange={setShowDemo} />
+      <DemoVideoModal open={showDemo} onOpenChange={setShowDemo} />
     </div>
   );
 }

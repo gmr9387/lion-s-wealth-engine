@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Shield, Check, X, Clock, AlertTriangle, Crown, FileText, RefreshCw } from "lucide-react";
+import { Shield, Check, X, Clock, AlertTriangle, Crown, FileText, RefreshCw, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminApprovals } from "@/hooks/useAdminApprovals";
+import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { cn } from "@/lib/utils";
 
 export default function Admin() {
@@ -44,7 +45,7 @@ export default function Admin() {
             Admin Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
-            Review and approve pending requests
+            Platform analytics, approvals, and dispute reviews
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchApprovals} disabled={loading}>
@@ -53,7 +54,7 @@ export default function Admin() {
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -99,11 +100,15 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="approvals" className="space-y-4">
+      <Tabs defaultValue="analytics" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="approvals" className="gap-2">
             <Crown className="w-4 h-4" />
-            Million Mode Requests
+            Million Mode
             {pendingApprovals.length > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {pendingApprovals.length}
@@ -112,7 +117,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger value="disputes" className="gap-2">
             <FileText className="w-4 h-4" />
-            Dispute Reviews
+            Disputes
             {pendingDisputes.length > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {pendingDisputes.length}
@@ -120,6 +125,11 @@ export default function Admin() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics">
+          <AdminAnalytics />
+        </TabsContent>
 
         {/* Approvals Tab */}
         <TabsContent value="approvals" className="space-y-4">
