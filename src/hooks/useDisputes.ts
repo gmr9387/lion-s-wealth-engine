@@ -93,7 +93,9 @@ export function useUpdateDispute() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: DisputeUpdate & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: DisputeUpdate & { id: string; sendNotification?: boolean; creditorName?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from("disputes")
         .update(updates)
@@ -102,6 +104,25 @@ export function useUpdateDispute() {
         .single();
 
       if (error) throw error;
+
+      // Send email notification if status changed and user wants notification
+      if (updates.status && user) {
+        try {
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              type: "dispute_status_update",
+              userId: user.id,
+              data: {
+                status: updates.status,
+                creditorName: updates.creditorName || "Account",
+              },
+            },
+          });
+        } catch (e) {
+          console.error("Failed to send notification:", e);
+        }
+      }
+
       return data as Dispute;
     },
     onSuccess: (data) => {
