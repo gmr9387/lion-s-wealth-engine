@@ -8,9 +8,9 @@
 @layer base {
   :root {
     /* Background layers */
-    --background: 222 47% 6%;
-    --background-elevated: 222 47% 8%;
-    --background-surface: 222 47% 10%;
+    --background: 0 0% 0%;
+    --background-elevated: 0 0% 4%;
+    --background-surface: 0 0% 6%;
     --foreground: 210 40% 98%;
 
     /* Card surfaces with depth */
