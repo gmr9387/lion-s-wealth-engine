@@ -49,6 +49,20 @@ serve(async (req) => {
       );
     }
 
+    // Rate limiting: 20 requests per hour
+    const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", {
+      p_identifier: user_id,
+      p_function_name: "analyze-credit",
+      p_max_requests: 20,
+      p_window_seconds: 3600,
+    });
+    if (!rateLimitOk) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Fetch user's tradelines
     const { data: tradelines, error: tradelinesError } = await supabase
       .from("tradelines")

@@ -73,6 +73,21 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // Rate limiting: 5 requests per hour
+    const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", {
+      p_identifier: userId,
+      p_function_name: "parse-credit-report",
+      p_max_requests: 5,
+      p_window_seconds: 3600,
+    });
+    if (!rateLimitOk) {
+      console.log("Rate limit exceeded for user:", userId);
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Update upload status to processing
     await supabase
       .from("credit_report_uploads")

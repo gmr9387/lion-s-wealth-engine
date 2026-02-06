@@ -50,6 +50,21 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // Rate limiting: 20 requests per hour
+    const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", {
+      p_identifier: userId,
+      p_function_name: "next_best_move",
+      p_max_requests: 20,
+      p_window_seconds: 3600,
+    });
+    if (!rateLimitOk) {
+      console.log("Rate limit exceeded for user:", userId);
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ─────────────────────────────
     // Fetch user data
     // ─────────────────────────────

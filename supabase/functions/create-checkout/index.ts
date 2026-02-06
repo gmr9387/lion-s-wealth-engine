@@ -35,6 +35,26 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Rate limiting: 10 requests per hour
+    const rateLimitClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+    const { data: rateLimitOk } = await rateLimitClient.rpc("check_rate_limit", {
+      p_identifier: user.id,
+      p_function_name: "create-checkout",
+      p_max_requests: 10,
+      p_window_seconds: 3600,
+    });
+    if (!rateLimitOk) {
+      logStep("Rate limit exceeded", { userId: user.id });
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { price_id } = await req.json();
     if (!price_id) throw new Error("No price_id provided");
     logStep("Price ID received", { price_id });
