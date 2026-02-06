@@ -22,10 +22,10 @@
     --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
 
-    /* Primary - Gold/Amber accent */
-    --primary: 45 93% 47%;
+    /* Primary - Rich Lion Gold */
+    --primary: 40 76% 50%;
     --primary-foreground: 222 47% 6%;
-    --primary-glow: 45 93% 60%;
+    --primary-glow: 42 80% 62%;
 
     /* Secondary - Slate blue */
     --secondary: 217 33% 17%;
@@ -42,7 +42,7 @@
     /* Status colors */
     --success: 142 71% 45%;
     --success-foreground: 222 47% 6%;
-    --warning: 38 92% 50%;
+    --warning: 36 80% 50%;
     --warning-foreground: 222 47% 6%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
@@ -50,41 +50,41 @@
     /* Credit score colors */
     --score-excellent: 142 71% 45%;
     --score-good: 84 81% 44%;
-    --score-fair: 45 93% 47%;
+    --score-fair: 40 76% 50%;
     --score-poor: 25 95% 53%;
     --score-bad: 0 72% 51%;
 
     /* UI elements */
     --border: 217 33% 17%;
-    --border-glow: 45 93% 47%;
+    --border-glow: 40 76% 50%;
     --input: 217 33% 17%;
-    --ring: 45 93% 47%;
+    --ring: 40 76% 50%;
 
     --radius: 0.75rem;
 
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(38 92% 50%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(40 76% 50%) 0%, hsl(36 80% 44%) 100%);
     --gradient-dark: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 4%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
-    --gradient-glow: radial-gradient(ellipse at center, hsl(45 93% 47% / 0.15) 0%, transparent 70%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(40 76% 50% / 0.15) 0%, transparent 70%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-    --shadow-glow: 0 0 20px hsl(45 93% 47% / 0.3);
-    --shadow-glow-lg: 0 0 40px hsl(45 93% 47% / 0.4);
+    --shadow-glow: 0 0 20px hsl(40 76% 50% / 0.3);
+    --shadow-glow-lg: 0 0 40px hsl(40 76% 50% / 0.4);
 
     /* Sidebar */
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 45 93% 47%;
+    --sidebar-primary: 40 76% 50%;
     --sidebar-primary-foreground: 222 47% 6%;
     --sidebar-accent: 217 33% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 45 93% 47%;
+    --sidebar-ring: 40 76% 50%;
   }
 
   /* Light mode */
@@ -98,9 +98,9 @@
     --card-hover: 0 0% 96%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 45 93% 41%;
+    --primary: 40 76% 44%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 45 93% 55%;
+    --primary-glow: 42 80% 55%;
     --secondary: 220 14% 92%;
     --secondary-foreground: 222 47% 11%;
     --muted: 220 14% 93%;
@@ -109,24 +109,24 @@
     --accent-foreground: 0 0% 100%;
     --success: 142 71% 38%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 45%;
+    --warning: 36 80% 44%;
     --warning-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 87%;
-    --border-glow: 45 93% 47%;
+    --border-glow: 40 76% 50%;
     --input: 220 13% 87%;
-    --ring: 45 93% 47%;
-    --shadow-glow: 0 0 20px hsl(45 93% 47% / 0.15);
-    --shadow-glow-lg: 0 0 40px hsl(45 93% 47% / 0.2);
+    --ring: 40 76% 50%;
+    --shadow-glow: 0 0 20px hsl(40 76% 50% / 0.15);
+    --shadow-glow-lg: 0 0 40px hsl(40 76% 50% / 0.2);
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 45 93% 41%;
+    --sidebar-primary: 40 76% 44%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 93%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 13% 87%;
-    --sidebar-ring: 45 93% 47%;
+    --sidebar-ring: 40 76% 50%;
   }
 }
 
@@ -170,7 +170,7 @@
   /* Text gradients */
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(38 92% 50%) 100%);
+    background-image: linear-gradient(135deg, hsl(40 76% 50%) 0%, hsl(36 80% 44%) 100%);
   }
 
   .text-gradient-accent {
@@ -180,11 +180,11 @@
 
   /* Glow effects */
   .glow-gold {
-    box-shadow: 0 0 20px hsl(45 93% 47% / 0.3), 0 0 40px hsl(45 93% 47% / 0.2);
+    box-shadow: 0 0 20px hsl(40 76% 50% / 0.3), 0 0 40px hsl(40 76% 50% / 0.2);
   }
 
   .glow-gold-lg {
-    box-shadow: 0 0 30px hsl(45 93% 47% / 0.4), 0 0 60px hsl(45 93% 47% / 0.3);
+    box-shadow: 0 0 30px hsl(40 76% 50% / 0.4), 0 0 60px hsl(40 76% 50% / 0.3);
   }
 
   .glow-accent {
@@ -216,7 +216,7 @@
   .card-glow::before {
     content: '';
     @apply absolute -top-1/2 -left-1/2 w-[200%] h-[200%] opacity-0 transition-opacity duration-500;
-    background: radial-gradient(ellipse at center, hsl(45 93% 47% / 0.1) 0%, transparent 70%);
+    background: radial-gradient(ellipse at center, hsl(40 76% 50% / 0.1) 0%, transparent 70%);
   }
 
   .card-glow:hover::before {
@@ -234,10 +234,10 @@
 
   @keyframes glow {
     from {
-      box-shadow: 0 0 10px hsl(45 93% 47% / 0.2), 0 0 20px hsl(45 93% 47% / 0.1);
+      box-shadow: 0 0 10px hsl(40 76% 50% / 0.2), 0 0 20px hsl(40 76% 50% / 0.1);
     }
     to {
-      box-shadow: 0 0 20px hsl(45 93% 47% / 0.4), 0 0 40px hsl(45 93% 47% / 0.2);
+      box-shadow: 0 0 20px hsl(40 76% 50% / 0.4), 0 0 40px hsl(40 76% 50% / 0.2);
     }
   }
 
@@ -261,7 +261,7 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      hsl(45 93% 47% / 0.1) 50%,
+      hsl(40 76% 50% / 0.1) 50%,
       transparent 100%
     );
     animation: shimmer 2s infinite;

@@ -125,8 +125,8 @@ export default {
           to: { opacity: "1", transform: "translateX(0)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 10px hsl(45 93% 47% / 0.2)" },
-          "50%": { boxShadow: "0 0 30px hsl(45 93% 47% / 0.4)" },
+          "0%, 100%": { boxShadow: "0 0 10px hsl(40 76% 50% / 0.2)" },
+          "50%": { boxShadow: "0 0 30px hsl(40 76% 50% / 0.4)" },
         },
         "score-fill": {
           from: { strokeDashoffset: "440" },
@@ -145,7 +145,7 @@ export default {
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-gold": "linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(38 92% 50%) 100%)",
+        "gradient-gold": "linear-gradient(135deg, hsl(40 76% 50%) 0%, hsl(36 80% 44%) 100%)",
         "gradient-dark": "linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 4%) 100%)",
         "gradient-card": "linear-gradient(135deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%)",
       },
