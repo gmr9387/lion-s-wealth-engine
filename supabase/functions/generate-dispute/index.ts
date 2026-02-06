@@ -87,6 +87,20 @@ serve(async (req) => {
       );
     }
 
+    // Rate limiting: 10 requests per hour
+    const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", {
+      p_identifier: user_id,
+      p_function_name: "generate-dispute",
+      p_max_requests: 10,
+      p_window_seconds: 3600,
+    });
+    if (!rateLimitOk) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify consent exists and is valid
     const { data: consent, error: consentError } = await supabase
       .from("consents")

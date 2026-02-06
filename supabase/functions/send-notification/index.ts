@@ -170,11 +170,26 @@
        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
      );
  
-     const { type, userId, data }: NotificationRequest = await req.json();
-     console.log(`Sending ${type} notification to user ${userId}`);
- 
-     // Get user email from profiles
-     const { data: profile, error: profileError } = await supabaseClient
+      const { type, userId, data }: NotificationRequest = await req.json();
+      console.log(`Sending ${type} notification to user ${userId}`);
+
+      // Rate limiting: 50 requests per hour
+      const { data: rateLimitOk } = await supabaseClient.rpc("check_rate_limit", {
+        p_identifier: userId,
+        p_function_name: "send-notification",
+        p_max_requests: 50,
+        p_window_seconds: 3600,
+      });
+      if (!rateLimitOk) {
+        console.log("Rate limit exceeded for notifications, user:", userId);
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded" }),
+          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Get user email from profiles
+      const { data: profile, error: profileError } = await supabaseClient
        .from("profiles")
        .select("email, full_name")
        .eq("user_id", userId)

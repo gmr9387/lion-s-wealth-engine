@@ -441,6 +441,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_entries: {
+        Row: {
+          created_at: string
+          function_name: string
+          id: string
+          identifier: string
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          id?: string
+          identifier: string
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          id?: string
+          identifier?: string
+        }
+        Relationships: []
+      }
       score_history: {
         Row: {
           bureau: Database["public"]["Enums"]["credit_bureau"]
@@ -592,6 +613,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_function_name: string
+          p_identifier: string
+          p_max_requests: number
+          p_window_seconds?: number
+        }
+        Returns: boolean
+      }
+      cleanup_rate_limit_entries: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
