@@ -19,7 +19,8 @@ import {
   RefreshCw,
   ExternalLink,
   ShieldCheck,
-  ShieldOff
+  ShieldOff,
+  Gift
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -28,6 +29,7 @@ import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { useMfaStatus } from "@/hooks/useMfaStatus";
+import { ReferralSection } from "@/components/ReferralSection";
 
 interface Profile {
   id: string;
@@ -75,7 +77,7 @@ export default function Settings() {
     if (subscriptionStatus === "success") {
       toast({
         title: "Subscription successful!",
-        description: "Welcome to CWE-X! Your subscription is now active.",
+        description: "Welcome to Lion's Wealth Engine! Your subscription is now active.",
       });
       checkSubscription();
     } else if (subscriptionStatus === "canceled") {
@@ -429,6 +431,15 @@ export default function Settings() {
             loading={checkoutLoading}
           />
         </div>
+      </div>
+
+      {/* Referral Section */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Gift className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Referral Program</h2>
+        </div>
+        <ReferralSection />
       </div>
 
       {/* Password Change Dialog */}

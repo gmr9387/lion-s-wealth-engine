@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -117,7 +118,7 @@ export default function Auth() {
         } else {
           toast({
             title: "Account created!",
-            description: "Welcome to CWE-X. Let's build your credit empire.",
+            description: "Welcome to Lion's Wealth Engine. Let's build your credit empire.",
           });
         }
       }
@@ -148,8 +149,8 @@ export default function Auth() {
               <Zap className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gradient-gold mb-4">CWE-X</h1>
-          <p className="text-xl text-muted-foreground mb-2">Credit • Wealth • Elite Engine</p>
+          <h1 className="text-4xl font-bold text-gradient-gold mb-4">Lion's Wealth Engine</h1>
+          <p className="text-xl text-muted-foreground mb-2">Credit • Wealth • Funding</p>
           <p className="text-sm text-muted-foreground max-w-md mt-4">
             Transform your financial future with AI-powered credit optimization, 
             wealth building strategies, and elite funding opportunities.
@@ -183,7 +184,7 @@ export default function Auth() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-gold">
               <Zap className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-gradient-gold">CWE-X</span>
+            <span className="text-2xl font-bold text-gradient-gold">LWE</span>
           </div>
 
           <div className="text-center mb-8">
@@ -275,7 +276,18 @@ export default function Auth() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          {isLogin && (
+            <div className="mt-4 text-center">
+              <Link
+                to="/reset-password"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+          )}
+
+          <div className="mt-4 text-center">
             <button
               type="button"
               onClick={() => {
@@ -291,7 +303,10 @@ export default function Auth() {
           </div>
 
           <p className="mt-8 text-center text-xs text-muted-foreground">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            By continuing, you agree to our{" "}
+            <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+            {" "}and{" "}
+            <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
           </p>
         </div>
       </div>
