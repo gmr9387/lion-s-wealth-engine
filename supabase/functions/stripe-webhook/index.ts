@@ -17,7 +17,7 @@ const sendNotification = async (type: string, userId: string, data?: Record<stri
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
+
     if (!supabaseUrl || !supabaseKey) {
       logStep("Missing Supabase config for notifications");
       return;
@@ -43,12 +43,49 @@ const sendNotification = async (type: string, userId: string, data?: Record<stri
   }
 };
 
-const getUserIdFromCustomer = async (stripe: Stripe, customerId: string): Promise<string | null> => {
+/**
+ * Resolve user_id from Stripe customer via metadata, then fallback to email lookup.
+ */
+const getUserIdFromCustomer = async (
+  stripe: Stripe,
+  customerId: string,
+  supabaseClient: ReturnType<typeof createClient>
+): Promise<string | null> => {
   try {
-    const customer = await stripe.customers.retrieve(customerId as string);
+    const customer = await stripe.customers.retrieve(customerId);
     if (customer.deleted) return null;
-    return (customer as Stripe.Customer).metadata?.user_id || null;
-  } catch {
+
+    const stripeCustomer = customer as Stripe.Customer;
+
+    // Primary: use metadata user_id
+    if (stripeCustomer.metadata?.user_id) {
+      logStep("Resolved user_id from customer metadata", { userId: stripeCustomer.metadata.user_id });
+      return stripeCustomer.metadata.user_id;
+    }
+
+    // Fallback: lookup by email in profiles table
+    if (stripeCustomer.email) {
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("user_id")
+        .eq("email", stripeCustomer.email)
+        .maybeSingle();
+
+      if (profile?.user_id) {
+        logStep("Resolved user_id via email fallback", { email: stripeCustomer.email, userId: profile.user_id });
+
+        // Backfill metadata for future calls
+        await stripe.customers.update(customerId, {
+          metadata: { ...stripeCustomer.metadata, user_id: profile.user_id },
+        });
+        return profile.user_id;
+      }
+    }
+
+    logStep("Could not resolve user_id for customer", { customerId });
+    return null;
+  } catch (err) {
+    logStep("Error resolving user_id", { error: String(err) });
     return null;
   }
 };
@@ -91,11 +128,18 @@ serve(async (req) => {
 
     logStep("Event verified", { type: event.type, id: event.id });
 
+    // Initialize Supabase client for user lookups and idempotency
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     switch (event.type) {
       case "customer.subscription.created": {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string);
-        
+        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string, supabaseClient);
+
         logStep("Subscription created", {
           subscriptionId: subscription.id,
           customerId: subscription.customer,
@@ -104,7 +148,7 @@ serve(async (req) => {
         });
 
         if (userId) {
-          const planName = subscription.items.data[0]?.price?.nickname || "CWE-X Premium";
+          const planName = subscription.items.data[0]?.price?.nickname || "Lion's Wealth Engine Premium";
           await sendNotification("subscription_confirmation", userId, { planName });
         }
         break;
@@ -123,8 +167,8 @@ serve(async (req) => {
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string);
-        
+        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string, supabaseClient);
+
         logStep("Subscription canceled/deleted", {
           subscriptionId: subscription.id,
           customerId: subscription.customer,
@@ -150,8 +194,8 @@ serve(async (req) => {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const userId = await getUserIdFromCustomer(stripe, invoice.customer as string);
-        
+        const userId = await getUserIdFromCustomer(stripe, invoice.customer as string, supabaseClient);
+
         logStep("Payment failed", {
           invoiceId: invoice.id,
           customerId: invoice.customer,
@@ -163,7 +207,7 @@ serve(async (req) => {
         if (userId) {
           await sendNotification("action_reminder", userId, {
             actionTitle: "Payment Failed",
-            actionDescription: `Your payment attempt failed. Please update your payment method to continue your CWE-X subscription.`,
+            actionDescription: `Your payment attempt failed. Please update your payment method to continue your Lion's Wealth Engine subscription.`,
           });
         }
         break;
@@ -171,8 +215,8 @@ serve(async (req) => {
 
       case "customer.subscription.trial_will_end": {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string);
-        
+        const userId = await getUserIdFromCustomer(stripe, subscription.customer as string, supabaseClient);
+
         logStep("Trial ending soon", {
           subscriptionId: subscription.id,
           customerId: subscription.customer,
@@ -181,7 +225,7 @@ serve(async (req) => {
         });
 
         if (userId) {
-          const trialEndDate = subscription.trial_end 
+          const trialEndDate = subscription.trial_end
             ? new Date(subscription.trial_end * 1000).toLocaleDateString()
             : "soon";
           await sendNotification("action_reminder", userId, {

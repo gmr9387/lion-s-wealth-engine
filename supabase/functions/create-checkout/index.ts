@@ -13,6 +13,12 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Allowed price IDs to prevent arbitrary price injection
+const ALLOWED_PRICE_IDS = new Set([
+  "price_1SvM8FPe1XH7fjJZWI2pXwoQ", // Starter
+  "price_1SvM8YPe1XH7fjJZAQGQD8zx", // Elite
+]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -57,25 +63,51 @@ serve(async (req) => {
 
     const { price_id } = await req.json();
     if (!price_id) throw new Error("No price_id provided");
-    logStep("Price ID received", { price_id });
+
+    // Validate price_id against allowlist to prevent price injection
+    if (!ALLOWED_PRICE_IDS.has(price_id)) {
+      logStep("Invalid price_id rejected", { price_id });
+      return new Response(
+        JSON.stringify({ error: "Invalid subscription plan selected." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    logStep("Price ID validated", { price_id });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check for existing customer
+    // Check for existing customer or create one with user_id metadata
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
+    let customerId: string | undefined;
+
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
+
+      // Ensure user_id metadata is set on existing customer
+      const existingMetadata = customers.data[0].metadata;
+      if (!existingMetadata?.user_id || existingMetadata.user_id !== user.id) {
+        await stripe.customers.update(customerId, {
+          metadata: { ...existingMetadata, user_id: user.id },
+        });
+        logStep("Updated customer metadata with user_id", { customerId, userId: user.id });
+      }
+    } else {
+      // Create new customer with user_id metadata
+      const newCustomer = await stripe.customers.create({
+        email: user.email,
+        metadata: { user_id: user.id },
+      });
+      customerId = newCustomer.id;
+      logStep("Created new Stripe customer with metadata", { customerId, userId: user.id });
     }
 
     const origin = req.headers.get("origin") || "http://localhost:5173";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price: price_id,
@@ -85,6 +117,10 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${origin}/app/settings?subscription=success`,
       cancel_url: `${origin}/app/settings?subscription=canceled`,
+      metadata: { user_id: user.id },
+      subscription_data: {
+        metadata: { user_id: user.id },
+      },
     });
 
     logStep("Checkout session created", { sessionId: session.id });
