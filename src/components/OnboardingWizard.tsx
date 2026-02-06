@@ -151,8 +151,8 @@
                </div>
              </div>
              <div>
-               <h2 className="text-2xl font-bold text-foreground mb-2">
-                 Welcome to CWE-X!
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Welcome to Lion's Wealth Engine!
                </h2>
                <p className="text-muted-foreground">
                  Let's get your credit journey started in just 2 minutes.

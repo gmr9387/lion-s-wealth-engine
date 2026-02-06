@@ -76,11 +76,11 @@ export default function Index() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-gold">
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-gradient-gold">CWE-X</span>
+            <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
@@ -108,13 +108,13 @@ export default function Index() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8">
               <Crown className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">The Lion Credit & Wealth Engine</span>
+              <span className="text-sm font-medium text-primary">AI-Powered Credit & Wealth Platform</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-foreground">AI-Guided Path to</span>
+              <span className="text-gradient-gold">Lion's Wealth Engine</span>
               <br />
-              <span className="text-gradient-gold">700+ Credit & $500K+ Funding</span>
+              <span className="text-foreground text-3xl md:text-4xl">Your AI-Guided Path to 700+ Credit & $500K+ Funding</span>
             </h1>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -214,11 +214,11 @@ export default function Index() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-foreground">CWE-X</span>
-              <span className="text-sm text-muted-foreground">© 2024</span>
+              <span className="font-semibold text-foreground">Lion's Wealth Engine</span>
+              <span className="text-sm text-muted-foreground">© 2025</span>
             </div>
             <p className="text-xs text-muted-foreground text-center max-w-2xl">
-              CWE-X is an AI-guided credit optimization platform. We generate documents and provide strategy—you execute the actions. 
+              Lion's Wealth Engine is an AI-guided credit optimization platform. We generate documents and provide strategy—you execute the actions. 
               We are not a credit repair organization. All actions require your e-sign consent and comply with FCRA/FDCPA regulations. 
               Individual results vary based on credit profile and user effort.
             </p>
