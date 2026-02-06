@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import lweLogo from "@/assets/lwe-logo.png";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -145,9 +146,7 @@ export default function Auth() {
 
         <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-gold shadow-glow-lg">
-              <Zap className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={lweLogo} alt="Lion's Wealth Engine" className="h-24 w-24 rounded-2xl object-cover shadow-glow-lg" />
           </div>
           <h1 className="text-4xl font-bold text-gradient-gold mb-4">Lion's Wealth Engine</h1>
           <p className="text-xl text-muted-foreground mb-2">Credit • Wealth • Funding</p>
@@ -181,9 +180,7 @@ export default function Auth() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-gold">
-              <Zap className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={lweLogo} alt="Lion's Wealth Engine" className="h-14 w-14 rounded-xl object-cover" />
             <span className="text-2xl font-bold text-gradient-gold">LWE</span>
           </div>
 
