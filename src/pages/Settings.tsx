@@ -20,7 +20,8 @@ import {
   ExternalLink,
   ShieldCheck,
   ShieldOff,
-  Gift
+  Gift,
+  Building2
 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -30,6 +31,8 @@ import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { useMfaStatus } from "@/hooks/useMfaStatus";
 import { ReferralSection } from "@/components/ReferralSection";
+import { PlaidLinkButton } from "@/components/PlaidLinkButton";
+import { PlaidAccountsList } from "@/components/PlaidAccountsList";
 
 interface Profile {
   id: string;
@@ -431,6 +434,18 @@ export default function Settings() {
             loading={checkoutLoading}
           />
         </div>
+      </div>
+
+      {/* Linked Accounts (Plaid) */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Linked Bank Accounts</h2>
+          </div>
+          <PlaidLinkButton size="sm" variant="premium" />
+        </div>
+        <PlaidAccountsList />
       </div>
 
       {/* Referral Section */}
