@@ -20,41 +20,41 @@ import { Link } from "react-router-dom";
 const features = [
   {
     icon: CreditCard,
-    title: "AI Credit Analysis",
-    description: "Deep analysis of your credit profile with actionable insights to boost your score fast.",
+    title: "AI-Guided Credit Analysis",
+    description: "Smart analysis identifies exactly which items to dispute first for maximum score impact.",
   },
   {
     icon: Target,
-    title: "Automated Disputes",
-    description: "Generate FCRA-compliant dispute letters with one click. Track progress in real-time.",
+    title: "One-Click Dispute Generation",
+    description: "FCRA-compliant letters generated instantly. You review, approve, and submit on your timeline.",
   },
   {
     icon: TrendingUp,
-    title: "Wealth Building",
-    description: "Personalized wealth plans with income strategies and asset building roadmaps.",
+    title: "Personalized Wealth Roadmap",
+    description: "Step-by-step guidance from credit repair to funding approval, tailored to your profile.",
   },
   {
     icon: Crown,
-    title: "Million Mode",
-    description: "Elite funding sequences to unlock massive credit lines and business capital.",
+    title: "Funding Sequence Strategy",
+    description: "Proven 12-24 month path from starter cards to $500K+ in business credit lines.",
   },
   {
     icon: Building2,
-    title: "Business Credit",
-    description: "LLC setup guidance, EIN applications, and vendor credit building strategies.",
+    title: "Business Credit Blueprint",
+    description: "LLC setup guidance, EIN applications, and vendor credit building—all mapped out for you.",
   },
   {
     icon: Shield,
-    title: "Compliance First",
-    description: "All actions require e-sign consent and admin approval for your protection.",
+    title: "Legally Protected Process",
+    description: "E-sign consent on every action. Full audit trail. FCRA/FDCPA compliant.",
   },
 ];
 
 const stats = [
-  { value: "$2.5M+", label: "Funding Unlocked" },
-  { value: "150+", label: "Score Points Gained" },
-  { value: "500+", label: "Disputes Won" },
-  { value: "99%", label: "Satisfaction Rate" },
+  { value: "12-18", label: "Months to 700+ Score" },
+  { value: "80%", label: "Faster Than DIY" },
+  { value: "$5K+", label: "Saved vs. Credit Repair" },
+  { value: "500K+", label: "Max Funding Potential" },
 ];
 
 export default function Index() {
@@ -112,14 +112,14 @@ export default function Index() {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-foreground">Transform Your</span>
+              <span className="text-foreground">AI-Guided Path to</span>
               <br />
-              <span className="text-gradient-gold">Financial Future</span>
+              <span className="text-gradient-gold">700+ Credit & $500K+ Funding</span>
             </h1>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              AI-powered credit optimization, automated disputes, wealth building strategies, 
-              and elite funding sequences. From $2,000 to $1,000,000+.
+              The intelligent system that tells you exactly what to do, when to do it, and generates 
+              every document you need. You execute—we accelerate.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -152,12 +152,12 @@ export default function Index() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything You Need to
-              <span className="text-gradient-gold"> Build Wealth</span>
+              Your Complete
+              <span className="text-gradient-gold"> Credit & Wealth System</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive tools and AI-powered insights to transform your credit, 
-              unlock funding, and build lasting wealth.
+              AI handles the strategy and paperwork. You make the decisions and take action. 
+              Together, we compress a 5-year journey into 12-18 months.
             </p>
           </div>
 
@@ -192,11 +192,11 @@ export default function Index() {
               </div>
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Ready to Transform Your Credit?
+              Ready to Start Your 12-Month Transformation?
             </h2>
             <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Join thousands of users who have improved their credit scores 
-              and unlocked new funding opportunities with CWE-X.
+              Get your personalized roadmap today. See exactly what steps to take, 
+              when to take them, and what results to expect at each milestone.
             </p>
             <Link to="/auth">
               <Button variant="premium" size="xl" className="text-lg">
@@ -217,9 +217,10 @@ export default function Index() {
               <span className="font-semibold text-foreground">CWE-X</span>
               <span className="text-sm text-muted-foreground">© 2024</span>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              CWE-X provides educational information. We are not a credit repair organization.
-              All actions require user consent and comply with FCRA regulations.
+            <p className="text-xs text-muted-foreground text-center max-w-2xl">
+              CWE-X is an AI-guided credit optimization platform. We generate documents and provide strategy—you execute the actions. 
+              We are not a credit repair organization. All actions require your e-sign consent and comply with FCRA/FDCPA regulations. 
+              Individual results vary based on credit profile and user effort.
             </p>
           </div>
         </div>
