@@ -29,31 +29,29 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("User authenticated", { userId: user.id });
 
-    // Rate limiting: 30 requests per hour
+    // Rate limiting: 60 requests per hour (called every 60s by frontend)
     const { data: rateLimitOk } = await supabaseClient.rpc("check_rate_limit", {
       p_identifier: user.id,
       p_function_name: "check-subscription",
-      p_max_requests: 30,
+      p_max_requests: 60,
       p_window_seconds: 3600,
     });
     if (!rateLimitOk) {
       logStep("Rate limit exceeded", { userId: user.id });
       return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ subscribed: false, error: "Rate limit exceeded" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -71,24 +69,29 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
+    // Also check for "trialing" subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      limit: 5,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
+    const activeSub = subscriptions.data.find(
+      (s) => s.status === "active" || s.status === "trialing"
+    );
+
     let productId = null;
     let subscriptionEnd = null;
+    let subscriptionStatus = null;
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    if (activeSub) {
+      subscriptionEnd = new Date(activeSub.current_period_end * 1000).toISOString();
+      subscriptionStatus = activeSub.status;
       logStep("Active subscription found", {
-        subscriptionId: subscription.id,
+        subscriptionId: activeSub.id,
+        status: activeSub.status,
         endDate: subscriptionEnd,
       });
-      productId = subscription.items.data[0].price.product;
+      productId = activeSub.items.data[0].price.product;
       logStep("Determined product", { productId });
     } else {
       logStep("No active subscription found");
@@ -96,9 +99,10 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        subscribed: hasActiveSub,
+        subscribed: !!activeSub,
         product_id: productId,
         subscription_end: subscriptionEnd,
+        subscription_status: subscriptionStatus,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -108,7 +112,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ subscribed: false, error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
