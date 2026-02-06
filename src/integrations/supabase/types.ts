@@ -402,6 +402,63 @@ export type Database = {
         }
         Relationships: []
       }
+      plaid_connections: {
+        Row: {
+          access_token: string
+          account_id: string | null
+          account_mask: string | null
+          account_name: string | null
+          account_subtype: string | null
+          account_type: string | null
+          created_at: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string
+          owner_email: string | null
+          owner_name: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_id?: string | null
+          account_mask?: string | null
+          account_name?: string | null
+          account_subtype?: string | null
+          account_type?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id: string
+          owner_email?: string | null
+          owner_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string | null
+          account_mask?: string | null
+          account_name?: string | null
+          account_subtype?: string | null
+          account_type?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string
+          owner_email?: string | null
+          owner_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
