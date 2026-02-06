@@ -52,7 +52,7 @@ export function TwoFactorSetup({ open, onOpenChange, onSuccess }: TwoFactorSetup
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: "CWE-X Authenticator",
+        friendlyName: "Lion's Wealth Engine Authenticator",
       });
 
       if (error) throw error;
@@ -163,7 +163,7 @@ export function TwoFactorSetup({ open, onOpenChange, onSuccess }: TwoFactorSetup
                   <div>
                     <p className="font-medium text-foreground">Scan the QR code</p>
                     <p className="text-sm text-muted-foreground">
-                      Link CWE-X to your authenticator app
+                      Link Lion's Wealth Engine to your authenticator app
                     </p>
                   </div>
                 </div>

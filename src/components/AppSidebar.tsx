@@ -85,7 +85,7 @@ export function AppSidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-gold">
             <Zap className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-gradient-gold">CWE-X</span>
+          <span className="text-lg font-bold text-gradient-gold">LWE</span>
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -122,9 +122,9 @@ export function AppSidebar() {
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <span className="text-xl font-bold text-gradient-gold">CWE-X</span>
+              <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                Credit • Wealth • Elite
+                Credit • Wealth • Funding
               </p>
             </div>
           </div>
