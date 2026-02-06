@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
-  Zap, 
   ArrowRight, 
   CreditCard, 
   TrendingUp, 
@@ -17,6 +16,7 @@ import {
 import { Link } from "react-router-dom";
 import { DemoVideoModal } from "@/components/DemoVideoModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import lweLogo from "@/assets/lwe-logo.png";
 
 const features = [
   {
@@ -78,9 +78,7 @@ export default function Index() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-gold">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={lweLogo} alt="Lion's Wealth Engine" className="h-10 w-10 rounded-xl object-cover" />
             <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
           </div>
           <div className="flex items-center gap-3">
@@ -215,7 +213,7 @@ export default function Index() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
+              <img src={lweLogo} alt="Lion's Wealth Engine" className="h-6 w-6 rounded object-cover" />
               <span className="font-semibold text-foreground">Lion's Wealth Engine</span>
               <span className="text-sm text-muted-foreground">© 2025</span>
             </div>

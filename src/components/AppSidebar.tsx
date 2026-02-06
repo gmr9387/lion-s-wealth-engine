@@ -16,6 +16,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
+import lweLogo from "@/assets/lwe-logo.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,8 +83,8 @@ export function AppSidebar() {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-sidebar flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-gold">
-            <Zap className="h-4 w-4 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden">
+            <img src={lweLogo} alt="LWE" className="h-8 w-8 object-cover" />
           </div>
           <span className="text-lg font-bold text-gradient-gold">LWE</span>
         </div>
@@ -118,8 +119,8 @@ export function AppSidebar() {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-gold">
-              <Zap className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg overflow-hidden">
+              <img src={lweLogo} alt="Lion's Wealth Engine" className="h-9 w-9 object-cover" />
             </div>
             <div>
               <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
