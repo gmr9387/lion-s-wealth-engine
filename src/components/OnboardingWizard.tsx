@@ -388,7 +388,7 @@
        <DialogContent className="max-w-md">
          <DialogHeader className="sr-only">
            <DialogTitle>Onboarding Wizard</DialogTitle>
-           <DialogDescription>Complete your CWE-X setup</DialogDescription>
+           <DialogDescription>Complete your Lion's Wealth Engine setup</DialogDescription>
          </DialogHeader>
          
          {step !== "welcome" && step !== "complete" && (

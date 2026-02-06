@@ -1,4 +1,4 @@
-// CWE-X Type Definitions
+// Lion's Wealth Engine — Type Definitions
 
 import { Database } from "@/integrations/supabase/types";
 

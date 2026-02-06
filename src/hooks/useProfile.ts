@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Profile, ProfileUpdate, UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
  
- const ONBOARDING_KEY = "cwe-x-onboarding-complete";
+ const ONBOARDING_KEY = "lwe-onboarding-complete";
  
  export function useOnboardingStatus() {
    const checkComplete = () => {
