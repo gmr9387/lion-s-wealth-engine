@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Zap } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import lweLogo from "@/assets/lwe-logo.png";
 import { Button } from "@/components/ui/button";
 
 export default function Terms() {
@@ -8,8 +9,8 @@ export default function Terms() {
       <nav className="border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-gold">
-              <Zap className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden">
+              <img src={lweLogo} alt="LWE" className="h-10 w-10 object-cover" />
             </div>
             <span className="text-xl font-bold text-gradient-gold">Lion's Wealth Engine</span>
           </Link>
@@ -24,7 +25,7 @@ export default function Terms() {
 
       <main className="container mx-auto px-6 py-12 max-w-3xl">
         <h1 className="text-3xl font-bold text-foreground mb-2">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-8">Last updated: February 6, 2025</p>
+        <p className="text-sm text-muted-foreground mb-8">Last updated: February 6, 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-6 text-foreground">
           <section className="space-y-3">

@@ -79,7 +79,7 @@ export function useCreateConsent() {
 
 // Consent text templates
 export const CONSENT_TEXTS = {
-  credit_dispute: `I hereby authorize CWE-X to submit credit disputes on my behalf to the credit bureaus (Experian, Equifax, TransUnion). I understand that:
+  credit_dispute: `I hereby authorize Lion's Wealth Engine to submit credit disputes on my behalf to the credit bureaus (Experian, Equifax, TransUnion). I understand that:
 
 1. This action may affect my credit file
 2. I am providing truthful and accurate information
@@ -89,7 +89,7 @@ export const CONSENT_TEXTS = {
 
 By signing, I acknowledge that I have read and agree to these terms.`,
 
-  credit_pull: `I authorize CWE-X to obtain my credit report from one or more credit bureaus for the purpose of credit analysis and recommendations. I understand that:
+  credit_pull: `I authorize Lion's Wealth Engine to obtain my credit report from one or more credit bureaus for the purpose of credit analysis and recommendations. I understand that:
 
 1. This may result in a soft or hard inquiry on my credit file
 2. Hard inquiries may temporarily impact my credit score
@@ -98,7 +98,7 @@ By signing, I acknowledge that I have read and agree to these terms.`,
 
 By signing, I authorize this credit inquiry.`,
 
-  funding_application: `I authorize CWE-X to submit funding applications on my behalf to financial institutions. I understand that:
+  funding_application: `I authorize Lion's Wealth Engine to submit funding applications on my behalf to financial institutions. I understand that:
 
 1. Applications may result in hard credit inquiries
 2. I am responsible for any approved credit products
@@ -108,7 +108,7 @@ By signing, I authorize this credit inquiry.`,
 
 By signing, I authorize these funding applications.`,
 
-  million_mode: `I authorize CWE-X to execute the Million Mode funding sequence on my behalf. I understand that:
+  million_mode: `I authorize Lion's Wealth Engine to execute the Million Mode funding sequence on my behalf. I understand that:
 
 1. Multiple credit applications will be submitted
 2. Multiple hard inquiries will occur within a short timeframe

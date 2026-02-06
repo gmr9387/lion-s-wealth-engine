@@ -44,7 +44,7 @@ export function useAuth() {
       throw error;
     }
 
-    toast({ title: "Account created", description: "Welcome to CWE-X!" });
+    toast({ title: "Account created", description: "Welcome to Lion's Wealth Engine!" });
     return data;
   };
 

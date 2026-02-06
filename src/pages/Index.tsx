@@ -215,7 +215,7 @@ export default function Index() {
             <div className="flex items-center gap-2">
               <img src={lweLogo} alt="Lion's Wealth Engine" className="h-6 w-6 rounded object-cover" />
               <span className="font-semibold text-foreground">Lion's Wealth Engine</span>
-              <span className="text-sm text-muted-foreground">© 2025</span>
+              <span className="text-sm text-muted-foreground">© 2026</span>
             </div>
             <div className="flex items-center gap-4">
               <Link to="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">
