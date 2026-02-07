@@ -1,27 +1,17 @@
- import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CreditScoreDial } from "@/components/CreditScoreDial";
 import { NextBestMoveCard } from "@/components/NextBestMoveCard";
 import { ActionTaskList } from "@/components/ActionTaskList";
-import { TimelineChart } from "@/components/TimelineChart";
+import { ScoreHistoryChart } from "@/components/ScoreHistoryChart";
 import { FundingProbabilityCard } from "@/components/FundingProbabilityCard";
 import { StatCard } from "@/components/StatCard";
+import { DashboardSkeleton } from "@/components/SkeletonLoaders";
 import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNextBestMove } from "@/hooks/useNextBestMove";
 import { Button } from "@/components/ui/button";
- import { OnboardingWizard } from "@/components/OnboardingWizard";
- import { useOnboardingStatus } from "@/hooks/useProfile";
-
-// Demo data for score history (will be replaced with real data later)
-const demoScoreHistory = [
-  { date: "Oct", score: 520 },
-  { date: "Nov", score: 535 },
-  { date: "Dec", score: 548 },
-  { date: "Jan", score: 558 },
-  { date: "Feb", score: 585, projected: true },
-  { date: "Mar", score: 620, projected: true },
-  { date: "Apr", score: 660, projected: true },
-];
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { useOnboardingStatus } from "@/hooks/useProfile";
 
 const fundingTargets = [
   { amount: 10000, probability: 85, confidence: "high" as const, date: "90 days", requirements: ["Score 620+", "3 months history"] },
@@ -31,8 +21,8 @@ const fundingTargets = [
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
-   const [showOnboarding, setShowOnboarding] = useState(false);
-   const { checkComplete, markComplete } = useOnboardingStatus();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { checkComplete, markComplete } = useOnboardingStatus();
   const { 
     actions, 
     nextBestMove, 
@@ -49,25 +39,21 @@ export default function Dashboard() {
       generateActions();
     }
   }, [actionsLoading, actions.length, user]);
- 
-   // Show onboarding for new users
-   useEffect(() => {
-     if (user && !authLoading && !checkComplete()) {
-       setShowOnboarding(true);
-     }
-   }, [user, authLoading]);
- 
-   const handleOnboardingComplete = () => {
-     markComplete();
-     setShowOnboarding(false);
-   };
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (user && !authLoading && !checkComplete()) {
+      setShowOnboarding(true);
+    }
+  }, [user, authLoading]);
+
+  const handleOnboardingComplete = () => {
+    markComplete();
+    setShowOnboarding(false);
+  };
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // Map actions to ActionTask format
@@ -186,15 +172,9 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Timeline Chart */}
+          {/* Score History Chart - Now uses real data */}
           <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Score Roadmap</h2>
-              <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
-                30/60/90 day projection
-              </span>
-            </div>
-            <TimelineChart data={demoScoreHistory} targetScore={700} />
+            <ScoreHistoryChart />
           </div>
         </div>
 
@@ -205,8 +185,14 @@ export default function Dashboard() {
             <Zap className="w-5 h-5 text-primary" />
           </div>
           {actionsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-pulse text-muted-foreground">Loading actions...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="animate-pulse space-y-2 p-3 rounded-lg border border-border">
+                  <div className="h-4 w-3/4 bg-muted/60 rounded" />
+                  <div className="h-3 w-full bg-muted/60 rounded" />
+                  <div className="h-3 w-1/2 bg-muted/60 rounded" />
+                </div>
+              ))}
             </div>
           ) : actionTasks.length > 0 ? (
             <ActionTaskList 
@@ -242,11 +228,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-       <OnboardingWizard 
-         open={showOnboarding} 
-         onOpenChange={setShowOnboarding} 
-         onComplete={handleOnboardingComplete}
-       />
+      <OnboardingWizard 
+        open={showOnboarding} 
+        onOpenChange={setShowOnboarding} 
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 }

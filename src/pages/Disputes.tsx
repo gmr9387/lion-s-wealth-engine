@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DisputeForm, DisputeFormData } from "@/components/DisputeForm";
 import { ConsentModal } from "@/components/ConsentModal";
+import { EmptyState } from "@/components/EmptyState";
+import { DisputesSkeleton } from "@/components/SkeletonLoaders";
+import { DisputePdfExport } from "@/components/DisputePdfExport";
 import { 
   FileText, 
   Plus, 
@@ -14,7 +17,6 @@ import {
   Shield,
   Calendar,
   Building2,
-  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDisputes } from "@/hooks/useDisputes";
@@ -31,45 +33,16 @@ interface DisputeDisplay {
   dateSubmitted?: string;
   humanRequired: boolean;
   letterPreview?: string;
+  letterContent?: string;
 }
 
 const statusConfig = {
-  draft: {
-    label: "Draft",
-    icon: FileText,
-    color: "text-muted-foreground",
-    bg: "bg-muted",
-  },
-  pending_review: {
-    label: "Pending Review",
-    icon: Clock,
-    color: "text-warning",
-    bg: "bg-warning/10",
-  },
-  submitted: {
-    label: "Submitted",
-    icon: Send,
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
-  in_progress: {
-    label: "In Progress",
-    icon: Clock,
-    color: "text-accent",
-    bg: "bg-accent/10",
-  },
-  resolved: {
-    label: "Resolved",
-    icon: CheckCircle2,
-    color: "text-success",
-    bg: "bg-success/10",
-  },
-  rejected: {
-    label: "Rejected",
-    icon: AlertTriangle,
-    color: "text-destructive",
-    bg: "bg-destructive/10",
-  },
+  draft: { label: "Draft", icon: FileText, color: "text-muted-foreground", bg: "bg-muted" },
+  pending_review: { label: "Pending Review", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+  submitted: { label: "Submitted", icon: Send, color: "text-primary", bg: "bg-primary/10" },
+  in_progress: { label: "In Progress", icon: Clock, color: "text-accent", bg: "bg-accent/10" },
+  resolved: { label: "Resolved", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+  rejected: { label: "Rejected", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
 };
 
 export default function Disputes() {
@@ -82,7 +55,6 @@ export default function Disputes() {
   const { data: tradelines } = useTradelines();
   const { generate: generateDispute, generating } = useGenerateDispute();
 
-  // Transform real disputes to display format
   const displayDisputes: DisputeDisplay[] = disputes
     ? disputes.map(d => ({
         id: d.id,
@@ -96,6 +68,7 @@ export default function Disputes() {
           : undefined,
         humanRequired: d.human_required || true,
         letterPreview: d.letter_content?.substring(0, 200) || undefined,
+        letterContent: d.letter_content || undefined,
       }))
     : [];
 
@@ -130,11 +103,7 @@ export default function Disputes() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DisputesSkeleton />;
   }
 
   return (
@@ -143,9 +112,7 @@ export default function Disputes() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dispute Center</h1>
-          <p className="text-muted-foreground mt-1">
-            Track and manage your credit disputes
-          </p>
+          <p className="text-muted-foreground mt-1">Track and manage your credit disputes</p>
         </div>
         <Button variant="premium" onClick={() => setShowDisputeForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -229,9 +196,7 @@ export default function Disputes() {
                     <div>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold text-foreground">{dispute.creditor}</h3>
-                        {dispute.humanRequired && (
-                          <Shield className="w-4 h-4 text-warning" />
-                        )}
+                        {dispute.humanRequired && <Shield className="w-4 h-4 text-warning" />}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">{dispute.reason}</p>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -265,16 +230,28 @@ export default function Disputes() {
                   </div>
                 </div>
 
-                {/* Action buttons for pending disputes */}
-                {dispute.status === "pending_review" && (
+                {/* Action buttons */}
+                {(dispute.status === "pending_review" || dispute.letterContent) && (
                   <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-                    <Button variant="glow" size="sm">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Review & Approve
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Edit Letter
-                    </Button>
+                    {dispute.status === "pending_review" && (
+                      <>
+                        <Button variant="glow" size="sm">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Review & Approve
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Edit Letter
+                        </Button>
+                      </>
+                    )}
+                    {dispute.letterContent && (
+                      <DisputePdfExport
+                        letterContent={dispute.letterContent}
+                        creditorName={dispute.creditor}
+                        bureau={dispute.bureau}
+                        disputeId={dispute.id}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -282,22 +259,18 @@ export default function Disputes() {
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {filter === "all" ? "No disputes yet" : `No ${filter.replace("_", " ")} disputes`}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {filter === "all" 
-              ? "Start a new dispute to challenge inaccurate items on your credit report"
-              : "No disputes match this filter"
-            }
-          </p>
-          <Button variant="premium" onClick={() => setShowDisputeForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Dispute
-          </Button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={filter === "all" ? "No disputes yet" : `No ${filter.replace("_", " ")} disputes`}
+          description={
+            filter === "all"
+              ? "Start a new dispute to challenge inaccurate items on your credit report. Our AI generates FCRA-compliant letters in seconds."
+              : "No disputes match this filter. Try selecting a different status or create a new dispute."
+          }
+          actionLabel={filter === "all" ? "Create Your First Dispute" : undefined}
+          onAction={filter === "all" ? () => setShowDisputeForm(true) : undefined}
+          variant="bordered"
+        />
       )}
 
       {/* Modals */}
