@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBusiness } from "@/hooks/useBusiness";
+import { PageSkeleton } from "@/components/SkeletonLoaders";
 import {
   Dialog,
   DialogContent,
@@ -139,11 +140,7 @@ export default function Business() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

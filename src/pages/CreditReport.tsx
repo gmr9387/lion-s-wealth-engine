@@ -26,6 +26,8 @@ import { useCreateTradeline, CreateTradelineData } from "@/hooks/useTradelineAct
 import { useCreditAnalysis } from "@/hooks/useCreditAnalysis";
 import { useGenerateDispute } from "@/hooks/useGenerateDispute";
 import { CreditBureau } from "@/types";
+import { CreditReportSkeleton } from "@/components/SkeletonLoaders";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function CreditReport() {
   const [expandedTradeline, setExpandedTradeline] = useState<string | null>(null);
@@ -93,11 +95,7 @@ export default function CreditReport() {
   };
 
   if (tradelinesLoading || scoresLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-muted-foreground">Loading credit report...</div>
-      </div>
-    );
+    return <CreditReportSkeleton />;
   }
 
   return (
@@ -140,22 +138,16 @@ export default function CreditReport() {
 
       {/* Empty State */}
       {!hasData && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-8 text-center">
-          <CreditCard className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Credit Data Yet</h3>
-          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-            Start by adding your tradelines and credit scores from your credit reports. 
-            This data powers your action engine and funding projections.
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setShowScoreModal(true)}>
-              Add Score
-            </Button>
-            <Button variant="premium" onClick={() => setShowTradelineForm(true)}>
-              Add Tradeline
-            </Button>
-          </div>
-        </div>
+        <EmptyState
+          icon={CreditCard}
+          title="No Credit Data Yet"
+          description="Start by adding your tradelines and credit scores from your credit reports. This data powers your action engine and funding projections."
+          actionLabel="Add Tradeline"
+          onAction={() => setShowTradelineForm(true)}
+          secondaryLabel="Add Score"
+          onSecondary={() => setShowScoreModal(true)}
+          variant="bordered"
+        />
       )}
 
       {/* Analysis Result */}

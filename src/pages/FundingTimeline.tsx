@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { useFundingTimeline, FundingProjection } from "@/hooks/useFundingTimeline";
 import { useScoreHistory } from "@/hooks/useTradelines";
 import { Link } from "react-router-dom";
+import { PageSkeleton } from "@/components/SkeletonLoaders";
+import { EmptyState } from "@/components/EmptyState";
 
 const statusConfig = {
   achievable: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
@@ -251,19 +253,13 @@ export default function FundingTimeline() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 rounded-xl border border-border bg-card">
-          <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Add Credit Data First</h3>
-          <p className="text-muted-foreground mb-4">
-            Add your tradelines and credit scores to calculate funding projections
-          </p>
-          <Link to="/app/credit">
-            <Button variant="premium">
-              Add Credit Data
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={Target}
+          title="Add Credit Data First"
+          description="Add your tradelines and credit scores to calculate personalized funding projections and unlock your funding timeline."
+          actionLabel="Add Credit Data"
+          onAction={() => window.location.href = "/app/credit"}
+        />
       )}
 
       {/* Call to Action */}
