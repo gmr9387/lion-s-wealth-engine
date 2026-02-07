@@ -9,6 +9,7 @@ import { DashboardSkeleton } from "@/components/SkeletonLoaders";
 import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNextBestMove } from "@/hooks/useNextBestMove";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { useOnboardingStatus } from "@/hooks/useProfile";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { checkComplete, markComplete } = useOnboardingStatus();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { 
     actions, 
     nextBestMove, 
@@ -52,9 +54,22 @@ export default function Dashboard() {
     setShowOnboarding(false);
   };
 
-  if (authLoading) {
+  if (authLoading || statsLoading) {
     return <DashboardSkeleton />;
   }
+
+  // Use real data with sensible fallbacks
+  const currentScore = stats?.currentScore ?? null;
+  const previousScore = stats?.previousScore ?? null;
+  const scoreChange = stats?.scoreChange ?? 0;
+  const scoreBureau = stats?.scoreBureau ?? "TransUnion";
+  const hasScoreData = currentScore !== null;
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
+    return `$${amount.toLocaleString()}`;
+  };
 
   // Map actions to ActionTask format
   const actionTasks = actions.map((action) => ({
@@ -98,37 +113,37 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — wired to real data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Credit Score"
-          value="558"
-          change={+38}
-          changeLabel="this month"
+          value={hasScoreData ? String(currentScore) : "—"}
+          change={scoreChange !== 0 ? scoreChange : undefined}
+          changeLabel={scoreChange !== 0 ? "since last" : undefined}
           icon={CreditCard}
           iconColor="text-primary"
         />
         <StatCard
-          title="Score Potential"
-          value="720+"
-          change={+162}
-          changeLabel="achievable"
+          title="Negative Items"
+          value={String(stats?.negativeTradelines ?? 0)}
+          changeLabel={`of ${stats?.totalTradelines ?? 0} tradelines`}
           icon={TrendingUp}
-          iconColor="text-success"
-        />
-        <StatCard
-          title="Active Actions"
-          value={String(actions.length)}
-          icon={Target}
           iconColor="text-warning"
         />
         <StatCard
-          title="Available Credit"
-          value="$1,200"
-          change={-89}
-          changeLabel="% utilization"
-          icon={DollarSign}
+          title="Active Disputes"
+          value={String(stats?.activeDisputes ?? 0)}
+          changeLabel="in progress"
+          icon={Target}
           iconColor="text-accent"
+        />
+        <StatCard
+          title="Available Credit"
+          value={formatCurrency(stats?.totalCreditLimit ? stats.totalCreditLimit - (stats.totalBalance ?? 0) : 0)}
+          change={stats?.utilization ? -stats.utilization : undefined}
+          changeLabel={stats?.utilization ? "% utilization" : undefined}
+          icon={DollarSign}
+          iconColor="text-success"
         />
       </div>
 
@@ -141,9 +156,9 @@ export default function Dashboard() {
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-sm font-medium text-muted-foreground mb-4">Current Score</h2>
               <CreditScoreDial
-                score={558}
-                previousScore={520}
-                bureau="TransUnion"
+                score={currentScore ?? 300}
+                previousScore={previousScore ?? undefined}
+                bureau={scoreBureau}
               />
             </div>
 

@@ -1,7 +1,8 @@
  import { useState } from "react";
- import {
+import {
    Dialog,
    DialogContent,
+   DialogDescription,
    DialogHeader,
    DialogTitle,
  } from "@/components/ui/dialog";
@@ -72,12 +73,15 @@
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>
        <DialogContent className="max-w-2xl p-0 overflow-hidden">
-         <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-              <Play className="w-6 h-6 text-primary" />
-              How Lion's Wealth Engine Works
-            </DialogTitle>
-         </DialogHeader>
+        <DialogHeader className="p-6 pb-0">
+           <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+             <Play className="w-6 h-6 text-primary" />
+             How Lion's Wealth Engine Works
+           </DialogTitle>
+           <DialogDescription className="sr-only">
+             Step-by-step walkthrough of the Lion's Wealth Engine platform features
+           </DialogDescription>
+        </DialogHeader>
  
          <div className="p-6">
            {/* Progress indicators */}
