@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { DisputeForm, DisputeFormData } from "@/components/DisputeForm";
 import { ConsentModal } from "@/components/ConsentModal";
@@ -34,6 +36,7 @@ interface DisputeDisplay {
   humanRequired: boolean;
   letterPreview?: string;
   letterContent?: string;
+  tradelineId?: string;
 }
 
 const statusConfig = {
@@ -50,10 +53,13 @@ export default function Disputes() {
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [pendingDisputeData, setPendingDisputeData] = useState<DisputeFormData | null>(null);
+  const [editingDispute, setEditingDispute] = useState<DisputeDisplay | null>(null);
+  const [selectedTradelineForDispute, setSelectedTradelineForDispute] = useState<string | undefined>();
   
   const { data: disputes, isLoading } = useDisputes();
   const { data: tradelines } = useTradelines();
   const { generate: generateDispute, generating } = useGenerateDispute();
+  const { toast } = useToast();
 
   const displayDisputes: DisputeDisplay[] = disputes
     ? disputes.map(d => ({
@@ -69,6 +75,7 @@ export default function Disputes() {
         humanRequired: d.human_required || true,
         letterPreview: d.letter_content?.substring(0, 200) || undefined,
         letterContent: d.letter_content || undefined,
+        tradelineId: d.tradeline_id || undefined,
       }))
     : [];
 
@@ -100,6 +107,19 @@ export default function Disputes() {
       setPendingDisputeData(null);
     }
     setShowConsentModal(false);
+  };
+
+  const handleApproveDispute = async (disputeId: string) => {
+    try {
+      const { error } = await supabase
+        .from("disputes")
+        .update({ status: "submitted", submitted_at: new Date().toISOString() })
+        .eq("id", disputeId);
+      if (error) throw error;
+      toast({ title: "Dispute approved and submitted" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   if (isLoading) {
@@ -235,11 +255,25 @@ export default function Disputes() {
                   <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
                     {dispute.status === "pending_review" && (
                       <>
-                        <Button variant="glow" size="sm">
+                        <Button 
+                          variant="glow" 
+                          size="sm"
+                          onClick={() => {
+                            // Submit the dispute (change status to submitted)
+                            handleApproveDispute(dispute.id);
+                          }}
+                        >
                           <Eye className="w-4 h-4 mr-2" />
                           Review & Approve
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedTradelineForDispute(dispute.tradelineId);
+                            setShowDisputeForm(true);
+                          }}
+                        >
                           Edit Letter
                         </Button>
                       </>

@@ -186,7 +186,10 @@ export default function MillionMode() {
                 </>
               )}
             </Button>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={() => {
+              const el = document.getElementById("funding-sequence");
+              el?.scrollIntoView({ behavior: "smooth" });
+            }}>
               View Full Plan
             </Button>
           </div>
@@ -219,7 +222,7 @@ export default function MillionMode() {
 
       {/* Funding Sequence */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Funding Sequence</h2>
+        <h2 id="funding-sequence" className="text-lg font-semibold text-foreground mb-4">Funding Sequence</h2>
         <div className="relative">
           {/* Progress line */}
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border">

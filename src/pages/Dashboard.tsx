@@ -3,7 +3,7 @@ import { CreditScoreDial } from "@/components/CreditScoreDial";
 import { NextBestMoveCard } from "@/components/NextBestMoveCard";
 import { ActionTaskList } from "@/components/ActionTaskList";
 import { ScoreHistoryChart } from "@/components/ScoreHistoryChart";
-import { FundingProbabilityCard } from "@/components/FundingProbabilityCard";
+import { DashboardFunding } from "@/components/DashboardFunding";
 import { StatCard } from "@/components/StatCard";
 import { DashboardSkeleton } from "@/components/SkeletonLoaders";
 import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } from "lucide-react";
@@ -14,11 +14,7 @@ import { Button } from "@/components/ui/button";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { useOnboardingStatus } from "@/hooks/useProfile";
 
-const fundingTargets = [
-  { amount: 10000, probability: 85, confidence: "high" as const, date: "90 days", requirements: ["Score 620+", "3 months history"] },
-  { amount: 25000, probability: 65, confidence: "medium" as const, date: "6 months", requirements: ["Score 680+", "Income verification"] },
-  { amount: 100000, probability: 40, confidence: "low" as const, date: "12 months", requirements: ["Score 720+", "Business entity", "Tax returns"] },
-];
+// Funding targets are now pulled from useFundingTimeline hook
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -227,21 +223,7 @@ export default function Dashboard() {
       </div>
 
       {/* Funding Projections */}
-      <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Funding Timeline</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {fundingTargets.map((target, i) => (
-            <FundingProbabilityCard
-              key={i}
-              targetAmount={target.amount}
-              probability={target.probability}
-              targetDate={target.date}
-              requirements={target.requirements}
-              confidence={target.confidence}
-            />
-          ))}
-        </div>
-      </div>
+      <DashboardFunding />
 
       <OnboardingWizard 
         open={showOnboarding} 
