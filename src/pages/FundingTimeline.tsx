@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useFundingTimeline, FundingProjection } from "@/hooks/useFundingTimeline";
 import { useScoreHistory } from "@/hooks/useTradelines";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PageSkeleton } from "@/components/SkeletonLoaders";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -35,6 +35,7 @@ function getStatus(probability: number): "achievable" | "on-track" | "projected"
 }
 
 export default function FundingTimeline() {
+  const navigate = useNavigate();
   const { calculateProjections, loading, authLoading, result } = useFundingTimeline();
   const { data: scoreHistory } = useScoreHistory();
   const [hasCalculated, setHasCalculated] = useState(false);
@@ -258,7 +259,7 @@ export default function FundingTimeline() {
           title="Add Credit Data First"
           description="Add your tradelines and credit scores to calculate personalized funding projections and unlock your funding timeline."
           actionLabel="Add Credit Data"
-          onAction={() => window.location.href = "/app/credit"}
+          onAction={() => navigate("/app/credit")}
         />
       )}
 

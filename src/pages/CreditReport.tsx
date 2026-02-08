@@ -431,7 +431,7 @@ function TradelineCard({
               <Button variant="glow" size="sm" onClick={onDispute}>
                 Dispute This Item
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={onDispute}>
                 View Options
               </Button>
             </div>
