@@ -13,6 +13,7 @@ import { useActiveWealthPlan, useCreateWealthPlan, useUpdateWealthPlan } from "@
 import { WealthPhases } from "@/components/wealth/WealthPhases";
 import { DailyActions } from "@/components/wealth/DailyActions";
 import { IncomeStreams } from "@/components/wealth/IncomeStreams";
+import { GoalProgressTracker } from "@/components/wealth/GoalProgressTracker";
 import { UpdateGoalsDialog, WealthGoals } from "@/components/wealth/UpdateGoalsDialog";
 
 export default function WealthPlan() {
@@ -142,7 +143,14 @@ export default function WealthPlan() {
           goals={goals} 
           timelineMonths={activePlan?.timeline_months ?? 12} 
         />
-        <DailyActions />
+        <div className="space-y-6">
+          <GoalProgressTracker
+            goals={goals}
+            projectedOutcome={projectedOutcome}
+            strategies={strategies}
+          />
+          <DailyActions />
+        </div>
       </div>
 
       <IncomeStreams strategies={strategies} />
