@@ -10,6 +10,7 @@ import { CreditCard, TrendingUp, Target, DollarSign, Shield, Zap, RefreshCw } fr
 import { useAuth } from "@/hooks/useAuth";
 import { useNextBestMove } from "@/hooks/useNextBestMove";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
 import { Button } from "@/components/ui/button";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { useOnboardingStatus } from "@/hooks/useProfile";
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { checkComplete, markComplete } = useOnboardingStatus();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  useRealtimeDashboard(user?.id);
   const { 
     actions, 
     nextBestMove, 

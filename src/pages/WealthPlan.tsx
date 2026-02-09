@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/StatCard";
 import { 
@@ -6,21 +7,19 @@ import {
   Target,
   Briefcase,
   PiggyBank,
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  Zap,
   Loader2
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useActiveWealthPlan, useCreateWealthPlan } from "@/hooks/useWealth";
+import { useActiveWealthPlan, useCreateWealthPlan, useUpdateWealthPlan } from "@/hooks/useWealth";
 import { WealthPhases } from "@/components/wealth/WealthPhases";
 import { DailyActions } from "@/components/wealth/DailyActions";
 import { IncomeStreams } from "@/components/wealth/IncomeStreams";
+import { UpdateGoalsDialog, WealthGoals } from "@/components/wealth/UpdateGoalsDialog";
 
 export default function WealthPlan() {
   const { data: activePlan, isLoading } = useActiveWealthPlan();
   const createPlan = useCreateWealthPlan();
+  const updatePlan = useUpdateWealthPlan();
+  const [goalsOpen, setGoalsOpen] = useState(false);
 
   // Extract data from active plan or use defaults
   const goals = (activePlan?.goals as any) || {};
@@ -52,6 +51,23 @@ export default function WealthPlan() {
         savings_rate: "0%",
       },
     });
+  };
+
+  const handleSaveGoals = (newGoals: WealthGoals) => {
+    if (!activePlan) return;
+    updatePlan.mutate(
+      {
+        id: activePlan.id,
+        goals: {
+          emergency_fund: newGoals.emergency_fund,
+          credit_score: newGoals.credit_score,
+          income_streams: newGoals.income_streams,
+          savings_rate: newGoals.savings_rate,
+        },
+        timeline_months: newGoals.timeline_months,
+      },
+      { onSuccess: () => setGoalsOpen(false) }
+    );
   };
 
   if (isLoading) {
@@ -86,7 +102,7 @@ export default function WealthPlan() {
             Create Plan
           </Button>
         ) : (
-          <Button variant="premium">
+          <Button variant="premium" onClick={() => setGoalsOpen(true)}>
             <Target className="w-4 h-4 mr-2" />
             Update Goals
           </Button>
@@ -130,6 +146,14 @@ export default function WealthPlan() {
       </div>
 
       <IncomeStreams strategies={strategies} />
+
+      <UpdateGoalsDialog
+        open={goalsOpen}
+        onOpenChange={setGoalsOpen}
+        activePlan={activePlan}
+        onSave={handleSaveGoals}
+        saving={updatePlan.isPending}
+      />
     </div>
   );
 }
