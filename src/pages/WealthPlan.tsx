@@ -10,6 +10,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useActiveWealthPlan, useCreateWealthPlan, useUpdateWealthPlan } from "@/hooks/useWealth";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { WealthPhases } from "@/components/wealth/WealthPhases";
 import { DailyActions } from "@/components/wealth/DailyActions";
 import { IncomeStreams } from "@/components/wealth/IncomeStreams";
@@ -18,6 +19,7 @@ import { UpdateGoalsDialog, WealthGoals } from "@/components/wealth/UpdateGoalsD
 
 export default function WealthPlan() {
   const { data: activePlan, isLoading } = useActiveWealthPlan();
+  const { data: dashStats } = useDashboardStats();
   const createPlan = useCreateWealthPlan();
   const updatePlan = useUpdateWealthPlan();
   const [goalsOpen, setGoalsOpen] = useState(false);
@@ -148,6 +150,9 @@ export default function WealthPlan() {
             goals={goals}
             projectedOutcome={projectedOutcome}
             strategies={strategies}
+            stats={{
+              currentScore: dashStats?.currentScore ?? undefined,
+            }}
           />
           <DailyActions />
         </div>
