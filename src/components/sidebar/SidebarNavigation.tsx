@@ -10,7 +10,14 @@ import {
   Settings,
   ShieldCheck,
   LogOut,
+  Bell,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -99,6 +106,21 @@ export function SidebarNavigation({ isAdmin, onItemClick, onLogout }: SidebarNav
             onClick={onItemClick}
           />
         ))}
+
+        {/* Notification Bell */}
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-all duration-200 cursor-default">
+                <Bell className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                Notifications
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-sm">
+              <p>No new notifications</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </nav>
 
       {/* Secondary & Admin navigation */}

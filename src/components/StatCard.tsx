@@ -1,5 +1,11 @@
 import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StatCardProps {
   title: string;
@@ -9,6 +15,7 @@ interface StatCardProps {
   icon: LucideIcon;
   iconColor?: string;
   className?: string;
+  tooltip?: string;
 }
 
 export function StatCard({
@@ -19,11 +26,16 @@ export function StatCard({
   icon: Icon,
   iconColor = "text-primary",
   className,
+  tooltip,
 }: StatCardProps) {
   const isPositive = change && change > 0;
   const isNegative = change && change < 0;
 
-  return (
+  const defaultTooltip = change !== undefined
+    ? `${title}: ${value}${change ? ` (${isPositive ? "+" : ""}${change}${changeLabel ? " " + changeLabel : ""})` : ""}`
+    : `${title}: ${value}${changeLabel ? " — " + changeLabel : ""}`;
+
+  const card = (
     <div
       className={cn(
         "group relative overflow-hidden rounded-xl border border-border bg-card p-3 sm:p-5 transition-all duration-300",
@@ -67,5 +79,16 @@ export function StatCard({
         )}
       </div>
     </div>
+  );
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs text-sm">
+          <p>{tooltip || defaultTooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

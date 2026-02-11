@@ -120,6 +120,7 @@ export default function Dashboard() {
           changeLabel={scoreChange !== 0 ? "since last" : undefined}
           icon={CreditCard}
           iconColor="text-primary"
+          tooltip={hasScoreData ? `Your latest ${scoreBureau} score is ${currentScore}${scoreChange ? `. Change of ${scoreChange > 0 ? "+" : ""}${scoreChange} since last recorded score.` : "."}` : "No credit score recorded yet. Upload a credit report to get started."}
         />
         <StatCard
           title="Negative Items"
@@ -127,6 +128,7 @@ export default function Dashboard() {
           changeLabel={`of ${stats?.totalTradelines ?? 0} tradelines`}
           icon={TrendingUp}
           iconColor="text-warning"
+          tooltip={`${stats?.negativeTradelines ?? 0} negative items out of ${stats?.totalTradelines ?? 0} total tradelines on your report.`}
         />
         <StatCard
           title="Active Disputes"
@@ -134,12 +136,14 @@ export default function Dashboard() {
           changeLabel="in progress"
           icon={Target}
           iconColor="text-accent"
+          tooltip={`${stats?.activeDisputes ?? 0} disputes currently being processed (draft, pending review, or submitted).`}
         />
         <StatCard
           title="Available Credit"
           value={formatCurrency(stats?.totalCreditLimit ? stats.totalCreditLimit - (stats.totalBalance ?? 0) : 0)}
           change={stats?.utilization ? -stats.utilization : undefined}
           changeLabel={stats?.utilization ? "% utilization" : undefined}
+          tooltip={`Total credit limit: ${formatCurrency(stats?.totalCreditLimit ?? 0)}. Total balance: ${formatCurrency(stats?.totalBalance ?? 0)}. Utilization: ${stats?.utilization ?? 0}%.`}
           icon={DollarSign}
           iconColor="text-success"
         />

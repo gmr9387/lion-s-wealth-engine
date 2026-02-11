@@ -1,6 +1,12 @@
 import { Progress } from "@/components/ui/progress";
 import { Target, DollarSign, TrendingUp, PiggyBank, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface GoalProgressTrackerProps {
   goals: Record<string, any>;
@@ -76,39 +82,52 @@ export function GoalProgressTracker({
           const pct = goal.target > 0 ? Math.min(Math.round((goal.current / goal.target) * 100), 100) : 0;
           const isComplete = pct >= 100;
 
+          const tooltipText = isComplete
+            ? `${goal.label}: Goal reached! You hit ${goal.format(goal.target)}.`
+            : `${goal.label}: ${goal.format(goal.current)} of ${goal.format(goal.target)} (${pct}%). ${goal.format(goal.target - goal.current)} remaining.`;
+
           return (
-            <div key={goal.label} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <goal.icon className={cn("w-4 h-4", isComplete ? "text-success" : "text-muted-foreground")} />
-                  <span className="text-sm font-medium text-foreground">{goal.label}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {goal.format(goal.current)} / {goal.format(goal.target)}
-                </span>
-              </div>
+            <TooltipProvider key={goal.label} delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="space-y-2 cursor-default">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <goal.icon className={cn("w-4 h-4", isComplete ? "text-success" : "text-muted-foreground")} />
+                        <span className="text-sm font-medium text-foreground">{goal.label}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {goal.format(goal.current)} / {goal.format(goal.target)}
+                      </span>
+                    </div>
 
-              <Progress
-                value={pct}
-                className={cn("h-2.5", isComplete && "[&>div]:bg-success")}
-              />
+                    <Progress
+                      value={pct}
+                      className={cn("h-2.5", isComplete && "[&>div]:bg-success")}
+                    />
 
-              <div className="flex items-center justify-between">
-                <span
-                  className={cn(
-                    "text-xs font-medium",
-                    isComplete ? "text-success" : pct >= 60 ? "text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  {isComplete ? "✓ Goal reached!" : `${pct}% complete`}
-                </span>
-                {!isComplete && (
-                  <span className="text-xs text-muted-foreground">
-                    {goal.format(goal.target - goal.current)} to go
-                  </span>
-                )}
-              </div>
-            </div>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          isComplete ? "text-success" : pct >= 60 ? "text-primary" : "text-muted-foreground"
+                        )}
+                      >
+                        {isComplete ? "✓ Goal reached!" : `${pct}% complete`}
+                      </span>
+                      {!isComplete && (
+                        <span className="text-xs text-muted-foreground">
+                          {goal.format(goal.target - goal.current)} to go
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs text-sm">
+                  <p>{tooltipText}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         })}
       </div>
