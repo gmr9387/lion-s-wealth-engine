@@ -12,13 +12,8 @@ import {
   LogOut,
   Bell,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useInboxNotifications } from "@/hooks/useInboxNotifications";
 
 const navigation = [
   { name: "Dashboard", href: "/app", icon: LayoutDashboard },
@@ -91,6 +86,38 @@ function NavItem({
   );
 }
 
+function NotificationNavItem({ onClick }: { onClick?: () => void }) {
+  const location = useLocation();
+  const { unreadCount } = useInboxNotifications();
+  const isActive = location.pathname === "/app/notifications";
+
+  return (
+    <Link
+      to="/app/notifications"
+      onClick={onClick}
+      className={cn(
+        "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+        isActive
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+      )}
+    >
+      <Bell
+        className={cn(
+          "h-5 w-5 transition-colors",
+          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+        )}
+      />
+      Notifications
+      {unreadCount > 0 && (
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground px-1.5">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export function SidebarNavigation({ isAdmin, onItemClick, onLogout }: SidebarNavigationProps) {
   const location = useLocation();
 
@@ -107,20 +134,8 @@ export function SidebarNavigation({ isAdmin, onItemClick, onLogout }: SidebarNav
           />
         ))}
 
-        {/* Notification Bell */}
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-all duration-200 cursor-default">
-                <Bell className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                Notifications
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-sm">
-              <p>No new notifications</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/* Notifications link with badge */}
+        <NotificationNavItem onClick={onItemClick} />
       </nav>
 
       {/* Secondary & Admin navigation */}

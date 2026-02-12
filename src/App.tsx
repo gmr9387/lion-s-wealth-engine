@@ -15,6 +15,7 @@ import Business from "./pages/Business";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import ResetPassword from "./pages/ResetPassword";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="business" element={<Business />} />
             <Route path="settings" element={<Settings />} />
             <Route path="admin" element={<Admin />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
