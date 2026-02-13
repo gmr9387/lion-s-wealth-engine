@@ -123,7 +123,7 @@ export function GoalProgressTracker({
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="left" className="max-w-xs text-sm">
+                <TooltipContent side="top" className="max-w-xs text-sm">
                   <p>{tooltipText}</p>
                 </TooltipContent>
               </Tooltip>

@@ -40,12 +40,15 @@ export default function Dashboard() {
     }
   }, [actionsLoading, actions.length, user]);
 
-  // Show onboarding for new users
+  // Show onboarding for new users only if they have no score data
   useEffect(() => {
-    if (user && !authLoading && !checkComplete()) {
-      setShowOnboarding(true);
+    if (user && !authLoading && !statsLoading && !checkComplete()) {
+      const hasData = stats?.currentScore != null;
+      if (!hasData) {
+        setShowOnboarding(true);
+      }
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, statsLoading]);
 
   const handleOnboardingComplete = () => {
     markComplete();
