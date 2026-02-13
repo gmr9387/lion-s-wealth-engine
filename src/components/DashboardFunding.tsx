@@ -14,10 +14,11 @@ export function DashboardFunding() {
   const { calculateProjections, loading, result } = useFundingTimeline();
 
   useEffect(() => {
-    if (session?.user && !result && !loading) {
+    if (session?.user?.id && !result && !loading) {
       calculateProjections();
     }
-  }, [session?.user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const targets = result?.projections?.slice(0, 3).map((p) => ({
     amount: p.target,
